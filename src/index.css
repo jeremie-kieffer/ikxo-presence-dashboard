@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-objectif: #10b981;
+  --color-sous-objectif: #f59e0b;
+  --color-alerte: #ef4444;
+  --color-intercontrat: #3b82f6;
+  --color-evenement: #8b5cf6;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  font-family: var(--font-sans);
+}
