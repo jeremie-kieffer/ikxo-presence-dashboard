@@ -78,18 +78,18 @@ describe("avril 2026 — KPI cabinet", () => {
     expect(nbActifs(m)).toBe(26)
   })
 
-  it("taux d'atteinte ≈ 81% (21/26)", () => {
-    expect(tauxAtteinte(m)).toBeCloseTo(0.81, 2)
+  it("taux d'atteinte ≈ 77%", () => {
+    expect(tauxAtteinte(m)).toBeCloseTo(0.77, 2)
   })
 
-  it("présence moyenne ≈ 2.69j", () => {
-    expect(presenceMoyenne(m)).toBeCloseTo(2.69, 1)
+  it("présence moyenne ≈ 2.65j (arrondi 2.7 dans le brief)", () => {
+    expect(presenceMoyenne(m)).toBeCloseTo(2.65, 1)
   })
 
   it("nbSousObjectif + nbAtteint = nbActifs", () => {
     const atteint = nbActifs(m) - nbSousObjectif(m)
-    expect(atteint).toBe(21)
-    expect(nbSousObjectif(m)).toBe(5)
+    expect(atteint).toBe(20)
+    expect(nbSousObjectif(m)).toBe(6)
   })
 
   it("nbVenusAuMoinsUneFois = 26 (tout le monde est venu au moins 1x en avril)", () => {
@@ -97,15 +97,15 @@ describe("avril 2026 — KPI cabinet", () => {
     expect(nbJamaisVenus(m)).toBe(0)
   })
 
-  it("présence moyenne par jour (tous) ≈ 3.18 (70 présences / 22 jours ouvrés)", () => {
-    expect(presenceMoyenneParJourTous(m)).toBeCloseTo(3.18, 1)
+  it("présence moyenne par jour (tous) ≈ 3.14 (69 présences / 22 jours ouvrés)", () => {
+    expect(presenceMoyenneParJourTous(m)).toBeCloseTo(3.14, 1)
   })
 
-  it("présence moyenne par jour (hors IC) ≈ 2.18 (48 présences '1' / 22 jours)", () => {
+  it("présence moyenne par jour (hors IC) ≈ 2.14 (47 présences '1' / 22 jours)", () => {
     // Consultants en IC en avril : Zelal (8 IC), Julien (9 IC),
     // Caroline (1 + 2 IC), Esther (1 + 1 IC) → exclus.
-    // Reste 22 consultants, total des '1' = 70 − 8 − 9 − 3 − 2 = 48.
-    expect(presenceMoyenneParJourHorsIntercontrat(m)).toBeCloseTo(48 / 22, 3)
+    // Reste 22 consultants, total des '1' = 69 − 8 − 9 − 3 − 2 = 47.
+    expect(presenceMoyenneParJourHorsIntercontrat(m)).toBeCloseTo(47 / 22, 3)
   })
 
   it("hors intercontrat ≤ tous (par construction)", () => {
@@ -135,8 +135,8 @@ describe("avril 2026 — distributions", () => {
     expect(total).toBe(nbActifs(m))
   })
 
-  it("distribution : 5 consultants à 1 présence (les 5 sous-objectif)", () => {
-    expect(distributionPresences(m)["1"]).toBe(5)
+  it("distribution : 6 consultants à 1 présence (les 6 sous-objectif)", () => {
+    expect(distributionPresences(m)["1"]).toBe(6)
   })
 
   it("présence par jour de semaine : le jeudi domine (XO Day)", () => {
