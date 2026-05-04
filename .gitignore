@@ -28,3 +28,7 @@ dist-ssr
 
 # Sauvegardes locales du fichier Excel source
 *.backup-*
+
+# Fichiers verrous Excel
+~$*.xlsx
+~$*.xls
