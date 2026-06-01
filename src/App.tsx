@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { FormationView } from "./components/views/FormationView"
 import { MonthView } from "./components/views/MonthView"
 import { QuarterView } from "./components/views/QuarterView"
 import { chargerFichier } from "./lib/excel-parser"
@@ -10,12 +11,14 @@ import {
 } from "./lib/kpi-calculators"
 import type { DashboardData, MoisKey } from "./lib/types"
 
+type Section = "presence" | "formation"
 type Vue = "mensuelle" | "trimestre"
 
 function App() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [moisSelectionne, setMoisSelectionne] = useState<MoisKey | null>(null)
+  const [section, setSection] = useState<Section>("presence")
   const [vue, setVue] = useState<Vue>("mensuelle")
 
   useEffect(() => {
@@ -60,48 +63,60 @@ function App() {
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">
-            Dashboard de présence — IKXO
+            Dashboard IKXO
           </h1>
           <p className="text-sm text-slate-500">
-            Suivi de l'objectif « ≥2 jours/mois au bureau »
+            {section === "presence"
+              ? "Présence — suivi de l'objectif « ≥2 jours/mois au bureau »"
+              : "Formation — sessions et participations"}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <SelecteurVue vue={vue} onChange={setVue} />
-          {vue === "mensuelle" ? (
-            <select
-              value={moisSelectionne}
-              onChange={(e) => setMoisSelectionne(e.target.value)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-            >
-              {[...data.cles].reverse().map((cle) => (
-                <option key={cle} value={cle}>
-                  {libelleMois(cle)}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <select
-              value={trimestreActuelStr}
-              onChange={(e) => handleChangerTrimestre(e.target.value)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-            >
-              {trimestresDisponibles.map((str) => (
-                <option key={str} value={str}>
-                  {libelleTrimestre(str)}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-wrap items-center gap-3">
+          <SelecteurSection section={section} onChange={setSection} />
+          {section === "presence" && (
+            <>
+              <SelecteurVue vue={vue} onChange={setVue} />
+              {vue === "mensuelle" ? (
+                <select
+                  value={moisSelectionne}
+                  onChange={(e) => setMoisSelectionne(e.target.value)}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                >
+                  {[...data.cles].reverse().map((cle) => (
+                    <option key={cle} value={cle}>
+                      {libelleMois(cle)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={trimestreActuelStr}
+                  onChange={(e) => handleChangerTrimestre(e.target.value)}
+                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                >
+                  {trimestresDisponibles.map((str) => (
+                    <option key={str} value={str}>
+                      {libelleTrimestre(str)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </>
           )}
         </div>
       </header>
 
-      {incoherences.length > 0 && (
+      {section === "presence" && incoherences.length > 0 && (
         <BandeauIncoherences incoherences={incoherences} />
       )}
 
-      {vue === "mensuelle" && <MonthView mois={mois} data={data} />}
-      {vue === "trimestre" && <QuarterView mois={mois} data={data} />}
+      {section === "presence" && vue === "mensuelle" && (
+        <MonthView mois={mois} data={data} />
+      )}
+      {section === "presence" && vue === "trimestre" && (
+        <QuarterView mois={mois} data={data} />
+      )}
+      {section === "formation" && <FormationView data={data} />}
     </main>
   )
 }
@@ -218,10 +233,42 @@ function ErreurChargement({ message }: { message: string }) {
   )
 }
 
+const ONGLETS_SECTIONS: { id: Section; label: string }[] = [
+  { id: "presence", label: "Présence" },
+  { id: "formation", label: "Formation" },
+]
+
 const ONGLETS_VUES: { id: Vue; label: string }[] = [
   { id: "mensuelle", label: "Mensuelle" },
   { id: "trimestre", label: "Trimestrielle" },
 ]
+
+function SelecteurSection({
+  section,
+  onChange,
+}: {
+  section: Section
+  onChange: (s: Section) => void
+}) {
+  return (
+    <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
+      {ONGLETS_SECTIONS.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onChange(o.id)}
+          className={
+            section === o.id
+              ? "bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
+              : "px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+          }
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function SelecteurVue({
   vue,
