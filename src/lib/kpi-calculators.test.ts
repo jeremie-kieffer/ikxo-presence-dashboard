@@ -6,12 +6,14 @@ import {
   alertesRecurrentesTrimestre,
   calculerStatutOKR,
   clesDuTrimestre,
+  computeFormationKPIs,
   compterPresences,
   consultantsReguliersTrimestre,
   detecterIncoherences,
   distributionPresences,
   estARisque3Mois,
   evolutionTauxAtteinte,
+  filtrerSessions,
   historiqueConsultant,
   moisPrecedent,
   nbActifs,
@@ -71,6 +73,11 @@ describe("briques unitaires", () => {
   })
 })
 
+// Valeurs alignées sur la donnée d'avril telle qu'enrichie au
+// commit 1b1023d (refonte ergonomique). Le test était stale
+// depuis cette refonte ; il avait été écrit sur la donnée
+// initiale (69/47). Mettre à jour ce bloc si la donnée
+// d'avril évolue à nouveau.
 describe("avril 2026 — KPI cabinet", () => {
   const m = data.mois["2026-04"]
 
@@ -78,18 +85,18 @@ describe("avril 2026 — KPI cabinet", () => {
     expect(nbActifs(m)).toBe(26)
   })
 
-  it("taux d'atteinte ≈ 77%", () => {
-    expect(tauxAtteinte(m)).toBeCloseTo(0.77, 2)
+  it("taux d'atteinte ≈ 85% (22 atteints / 26 actifs)", () => {
+    expect(tauxAtteinte(m)).toBeCloseTo(22 / 26, 5)
   })
 
-  it("présence moyenne ≈ 2.65j (arrondi 2.7 dans le brief)", () => {
-    expect(presenceMoyenne(m)).toBeCloseTo(2.65, 1)
+  it("présence moyenne ≈ 3.15j (82 présences / 26 actifs)", () => {
+    expect(presenceMoyenne(m)).toBeCloseTo(82 / 26, 2)
   })
 
   it("nbSousObjectif + nbAtteint = nbActifs", () => {
     const atteint = nbActifs(m) - nbSousObjectif(m)
-    expect(atteint).toBe(20)
-    expect(nbSousObjectif(m)).toBe(6)
+    expect(atteint).toBe(22)
+    expect(nbSousObjectif(m)).toBe(4)
   })
 
   it("nbVenusAuMoinsUneFois = 26 (tout le monde est venu au moins 1x en avril)", () => {
@@ -97,15 +104,12 @@ describe("avril 2026 — KPI cabinet", () => {
     expect(nbJamaisVenus(m)).toBe(0)
   })
 
-  it("présence moyenne par jour (tous) ≈ 3.14 (69 présences / 22 jours ouvrés)", () => {
-    expect(presenceMoyenneParJourTous(m)).toBeCloseTo(3.14, 1)
+  it("présence moyenne par jour (tous) ≈ 3.73 (82 présences / 22 jours ouvrés)", () => {
+    expect(presenceMoyenneParJourTous(m)).toBeCloseTo(82 / 22, 2)
   })
 
-  it("présence moyenne par jour (hors IC) ≈ 2.14 (47 présences '1' / 22 jours)", () => {
-    // Consultants en IC en avril : Zelal (8 IC), Julien (9 IC),
-    // Caroline (1 + 2 IC), Esther (1 + 1 IC) → exclus.
-    // Reste 22 consultants, total des '1' = 69 − 8 − 9 − 3 − 2 = 47.
-    expect(presenceMoyenneParJourHorsIntercontrat(m)).toBeCloseTo(47 / 22, 3)
+  it("présence moyenne par jour (hors IC) ≈ 2.45 (54 présences '1' / 22 jours)", () => {
+    expect(presenceMoyenneParJourHorsIntercontrat(m)).toBeCloseTo(54 / 22, 3)
   })
 
   it("hors intercontrat ≤ tous (par construction)", () => {
@@ -135,8 +139,8 @@ describe("avril 2026 — distributions", () => {
     expect(total).toBe(nbActifs(m))
   })
 
-  it("distribution : 6 consultants à 1 présence (les 6 sous-objectif)", () => {
-    expect(distributionPresences(m)["1"]).toBe(6)
+  it("distribution : 4 consultants à 1 présence (les 4 sous-objectif)", () => {
+    expect(distributionPresences(m)["1"]).toBe(4)
   })
 
   it("présence par jour de semaine : le jeudi domine (XO Day)", () => {
@@ -231,8 +235,52 @@ describe("moisPrecedent", () => {
 })
 
 describe("detecterIncoherences", () => {
-  it("aucune incohérence sur le fichier réel actuel", () => {
-    expect(detecterIncoherences(data)).toEqual([])
+  // Les 6 ex-consultants ajoutés au commit fd2cb52 n'ont pas (encore)
+  // de Date de sortie remplie au Référentiel ; Jérémie Kieffer y figure
+  // sans saisie de présence (interne, pas consultant en mission). Tous
+  // sont donc signalés "absent_de_saisie" sur chacun des 5 mois.
+  // « Agnes Bregeon » apparaît dans Saisie 2026-06 sans entrée au
+  // Référentiel : c'est une vraie incohérence à corriger côté saisie.
+  // Ces tests décrivent l'état du fichier au moment de leur écriture ;
+  // ils évolueront quand le Lead PM nettoiera ces cas.
+  const NOMS_REFERENTIEL_SANS_SAISIE = [
+    "Anita Aladine",
+    "Camille Chansigaud",
+    "Emilien Rue",
+    "Gaetan Le Bail",
+    "Melchior R",
+    "Nicolas Renard",
+    "Jérémie Kieffer",
+  ]
+
+  it("35 'absent_de_saisie' (7 consultants × 5 mois)", () => {
+    const incohs = detecterIncoherences(data)
+    const absents = incohs.filter((i) => i.type === "absent_de_saisie")
+    expect(absents).toHaveLength(NOMS_REFERENTIEL_SANS_SAISIE.length * 5)
+  })
+
+  it("1 'saisi_hors_referentiel' : Agnes Bregeon en juin 2026", () => {
+    const incohs = detecterIncoherences(data)
+    const horsRef = incohs.filter((i) => i.type === "saisi_hors_referentiel")
+    expect(horsRef).toEqual([
+      {
+        mois: "2026-06",
+        consultant: "Agnes Bregeon",
+        type: "saisi_hors_referentiel",
+      },
+    ])
+  })
+
+  it("noms flagués 'absent_de_saisie' = exactement la liste connue", () => {
+    const incohs = detecterIncoherences(data)
+    const nomsAbsents = new Set(
+      incohs
+        .filter((i) => i.type === "absent_de_saisie")
+        .map((i) => i.consultant),
+    )
+    expect([...nomsAbsents].sort()).toEqual(
+      [...NOMS_REFERENTIEL_SANS_SAISIE].sort(),
+    )
   })
 
   it("détecte un consultant saisi hors référentiel et un consultant manquant", () => {
@@ -310,8 +358,12 @@ describe("vue trimestrielle : helpers", () => {
     ])
   })
 
-  it("clesDuTrimestre Q2 2026 = ['2026-04']", () => {
-    expect(clesDuTrimestre(data.cles, 2026, 2)).toEqual(["2026-04"])
+  it("clesDuTrimestre Q2 2026 = ['2026-04', '2026-05', '2026-06']", () => {
+    expect(clesDuTrimestre(data.cles, 2026, 2)).toEqual([
+      "2026-04",
+      "2026-05",
+      "2026-06",
+    ])
   })
 })
 
@@ -349,9 +401,83 @@ describe("vue trimestrielle : KPI", () => {
     expect(alertes).not.toContain("Julien Calvao")
   })
 
-  it("evolutionTauxAtteinte renvoie 3 points dans l'ordre chronologique", () => {
+  it("evolutionTauxAtteinte renvoie 5 points dans l'ordre chronologique", () => {
     const evo = evolutionTauxAtteinte(data)
-    expect(evo).toHaveLength(3)
-    expect(evo.map((e) => e.cle)).toEqual(["2026-02", "2026-03", "2026-04"])
+    expect(evo).toHaveLength(5)
+    expect(evo.map((e) => e.cle)).toEqual([
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+    ])
+  })
+})
+
+describe("formations — computeFormationKPIs (fenêtre globale)", () => {
+  const kpi = computeFormationKPIs(
+    data.formations,
+    data.participationsFormations,
+  )
+
+  it("nbSessions = 18 (catalogue complet)", () => {
+    expect(kpi.nbSessions).toBe(18)
+  })
+
+  it("nbParticipantsUniques = 32 (consultants avec ≥1 P ou F)", () => {
+    expect(kpi.nbParticipantsUniques).toBe(32)
+  })
+
+  it("top formateur : Jérémie Kieffer avec 8 animations", () => {
+    expect(kpi.topFormateurs[0]).toEqual({ nom: "Jérémie Kieffer", nb: 8 })
+  })
+
+  it("top participant : Laureline Berthou avec 10 participations", () => {
+    expect(kpi.topParticipants[0]).toEqual({ nom: "Laureline Berthou", nb: 10 })
+  })
+
+  it("topFormateurs et topParticipants sont triés desc et limités à 5", () => {
+    expect(kpi.topFormateurs.length).toBeLessThanOrEqual(5)
+    expect(kpi.topParticipants.length).toBeLessThanOrEqual(5)
+    for (let i = 1; i < kpi.topFormateurs.length; i++) {
+      expect(kpi.topFormateurs[i].nb).toBeLessThanOrEqual(
+        kpi.topFormateurs[i - 1].nb,
+      )
+    }
+    for (let i = 1; i < kpi.topParticipants.length; i++) {
+      expect(kpi.topParticipants[i].nb).toBeLessThanOrEqual(
+        kpi.topParticipants[i - 1].nb,
+      )
+    }
+  })
+
+  it("parConsultant : Jérémie Kieffer = 7 participations + 8 animations", () => {
+    const j = kpi.parConsultant.find((c) => c.nom === "Jérémie Kieffer")
+    expect(j).toEqual({
+      nom: "Jérémie Kieffer",
+      participations: 7,
+      animations: 8,
+    })
+  })
+})
+
+describe("formations — filtrage temporel", () => {
+  it("filtrerSessions sur 2026 retient 9 sessions (F-2026-001 → F-2026-009)", () => {
+    const debut2026 = new Date(2026, 0, 1)
+    const sessions2026 = filtrerSessions(data.formations, debut2026)
+    expect(sessions2026).toHaveLength(9)
+    expect(sessions2026.every((s) => s.idSession.startsWith("F-2026"))).toBe(
+      true,
+    )
+  })
+
+  it("computeFormationKPIs sur 2026 : nbSessions = 9", () => {
+    const debut2026 = new Date(2026, 0, 1)
+    const sessions2026 = filtrerSessions(data.formations, debut2026)
+    const kpi = computeFormationKPIs(sessions2026, data.participationsFormations)
+    expect(kpi.nbSessions).toBe(9)
+    const totalP = kpi.parConsultant.reduce((a, c) => a + c.participations, 0)
+    const totalF = kpi.parConsultant.reduce((a, c) => a + c.animations, 0)
+    expect(totalP + totalF).toBeGreaterThan(0)
   })
 })

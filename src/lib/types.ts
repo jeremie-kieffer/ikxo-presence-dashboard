@@ -45,4 +45,37 @@ export interface DashboardData {
   evenements: Evenement[]
   mois: Record<MoisKey, MoisData>
   cles: MoisKey[] // mois triés croissant pour le sélecteur
+  formations: SessionFormation[]
+  // Map consultant -> Map idSession -> rôle ('F' formateur, 'P' participant)
+  participationsFormations: ParticipationsFormation
+}
+
+// === Formations ===
+
+export type RoleFormation = "F" | "P"
+
+export interface SessionFormation {
+  idSession: string // ex. 'F-2026-001'
+  date: Date
+  thematique: string
+  formateurs: string[] // co-animation possible : split par virgule du champ Excel
+  lienSupport?: string
+}
+
+// Map<nomConsultant, Map<idSession, "F" | "P">>
+// Choix Map plutôt qu'objet pour faciliter l'itération et préserver l'ordre.
+export type ParticipationsFormation = Map<string, Map<string, RoleFormation>>
+
+export interface FormationConsultant {
+  nom: string
+  participations: number // nb de "P"
+  animations: number // nb de "F"
+}
+
+export interface FormationKPI {
+  nbSessions: number
+  nbParticipantsUniques: number // consultants ayant au moins une participation (P ou F)
+  topFormateurs: { nom: string; nb: number }[] // tri desc, longueur ≤ 5
+  topParticipants: { nom: string; nb: number }[] // tri desc, longueur ≤ 5
+  parConsultant: FormationConsultant[]
 }

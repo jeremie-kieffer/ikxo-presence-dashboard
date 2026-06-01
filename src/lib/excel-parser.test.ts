@@ -14,12 +14,18 @@ const arrayBuffer = buf.buffer.slice(
 const data = parserBuffer(arrayBuffer)
 
 describe("excel-parser : structure générale", () => {
-  it("charge 26 consultants au référentiel", () => {
-    expect(data.consultants).toHaveLength(26)
+  it("charge 33 consultants au référentiel (26 actifs + 7 ajoutés au commit fd2cb52)", () => {
+    expect(data.consultants).toHaveLength(33)
   })
 
-  it("détecte les 3 onglets de saisie disponibles", () => {
-    expect(data.cles).toEqual(["2026-02", "2026-03", "2026-04"])
+  it("détecte les 5 onglets de saisie disponibles", () => {
+    expect(data.cles).toEqual([
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06",
+    ])
   })
 
   it("extrait 3 événements globaux", () => {
@@ -46,10 +52,10 @@ describe("excel-parser : avril 2026", () => {
     expect(m.evenementsDuMois[0].date.getDate()).toBe(23)
   })
 
-  it("Zelal Aslan : 8 IC, aucune valeur 1", () => {
+  it("Zelal Aslan : 11 IC, aucune valeur 1", () => {
     const z = m.lignes.find((l) => l.nom === "Zelal Aslan")
     expect(z).toBeDefined()
-    expect(z!.jours.filter((j) => j.valeur === "IC")).toHaveLength(8)
+    expect(z!.jours.filter((j) => j.valeur === "IC")).toHaveLength(11)
     expect(z!.jours.filter((j) => j.valeur === 1)).toHaveLength(0)
   })
 
@@ -76,5 +82,75 @@ describe("excel-parser : février 2026", () => {
     expect(m.evenementsDuMois).toHaveLength(1)
     expect(m.evenementsDuMois[0].type).toBe("XO Product Day")
     expect(m.evenementsDuMois[0].date.getDate()).toBe(19)
+  })
+})
+
+describe("excel-parser : Formations (catalogue)", () => {
+  it("charge 18 sessions historiques", () => {
+    expect(data.formations).toHaveLength(18)
+  })
+
+  it("première session = F-2025-001 (Jérémie Kieffer, mars 2025)", () => {
+    const f = data.formations[0]
+    expect(f.idSession).toBe("F-2025-001")
+    expect(f.formateurs).toEqual(["Jérémie Kieffer"])
+    expect(f.date.getFullYear()).toBe(2025)
+    expect(f.date.getMonth() + 1).toBe(3)
+  })
+
+  it("dernière session = F-2026-009 (Simon Kerhyuel, mai 2026)", () => {
+    const f = data.formations[data.formations.length - 1]
+    expect(f.idSession).toBe("F-2026-009")
+    expect(f.formateurs).toEqual(["Simon Kerhyuel"])
+    expect(f.date.getFullYear()).toBe(2026)
+    expect(f.date.getMonth() + 1).toBe(5)
+  })
+
+  it("toutes les sessions ont une date valide et au moins un formateur", () => {
+    for (const f of data.formations) {
+      expect(f.date instanceof Date).toBe(true)
+      expect(Number.isFinite(f.date.getTime())).toBe(true)
+      expect(f.formateurs.length).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it("toutes les sessions sont triées chronologiquement (ordre du fichier)", () => {
+    for (let i = 1; i < data.formations.length; i++) {
+      expect(data.formations[i].date.getTime()).toBeGreaterThanOrEqual(
+        data.formations[i - 1].date.getTime(),
+      )
+    }
+  })
+})
+
+describe("excel-parser : Formations_Participations (matrice)", () => {
+  it("Laureline Berthou : 10 'P', 0 'F'", () => {
+    const p = data.participationsFormations.get("Laureline Berthou")
+    expect(p).toBeDefined()
+    const codes = [...p!.values()]
+    expect(codes.filter((c) => c === "P")).toHaveLength(10)
+    expect(codes.filter((c) => c === "F")).toHaveLength(0)
+  })
+
+  it("Jérémie Kieffer : 7 'P' + 8 'F' (= 15 total, formule du Total Excel)", () => {
+    const p = data.participationsFormations.get("Jérémie Kieffer")
+    expect(p).toBeDefined()
+    const codes = [...p!.values()]
+    expect(codes.filter((c) => c === "P")).toHaveLength(7)
+    expect(codes.filter((c) => c === "F")).toHaveLength(8)
+  })
+
+  it("Calixte Bailly anime F-2026-008", () => {
+    const p = data.participationsFormations.get("Calixte Bailly")
+    expect(p?.get("F-2026-008")).toBe("F")
+  })
+
+  it("la matrice référence exactement les 18 sessions du catalogue", () => {
+    const idsCatalogue = new Set(data.formations.map((f) => f.idSession))
+    for (const sessions of data.participationsFormations.values()) {
+      for (const id of sessions.keys()) {
+        expect(idsCatalogue.has(id)).toBe(true)
+      }
+    }
   })
 })

@@ -7,7 +7,10 @@ import type {
   Evenement,
   MoisData,
   MoisKey,
+  ParticipationsFormation,
   PresenceJour,
+  RoleFormation,
+  SessionFormation,
 } from "./types"
 
 const URL_FICHIER_DEFAUT = "/data/suivi_presence_consultants.xlsx"
@@ -44,7 +47,21 @@ export function parserBuffer(buffer: ArrayBuffer): DashboardData {
   }
   cles.sort()
 
-  return { consultants, evenements, mois, cles }
+  const formations = parserFormations(workbook.Sheets["Formations"])
+  const participationsFormations = parserFormationsParticipations(
+    workbook.Sheets["Formations_Participations"],
+  )
+
+  alerterFormateursInconnus(formations, consultants)
+
+  return {
+    consultants,
+    evenements,
+    mois,
+    cles,
+    formations,
+    participationsFormations,
+  }
 }
 
 function parserReferentiel(sheet: XLSX.WorkSheet | undefined): Consultant[] {
@@ -171,4 +188,91 @@ function filtrerEvenementsDuMois(
   return evts.filter(
     (e) => e.date.getFullYear() === annee && e.date.getMonth() + 1 === mois,
   )
+}
+
+// === Formations ===
+
+export function parserFormations(
+  sheet: XLSX.WorkSheet | undefined,
+): SessionFormation[] {
+  if (!sheet) return []
+  const rows = lireLignes(sheet)
+  const headerIdx = rows.findIndex((r) => r[0] === "id_session")
+  if (headerIdx === -1) return []
+
+  const sessions: SessionFormation[] = []
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i]
+    const id = row[0]
+    if (id == null || id === "") continue
+    if (!estSerialDate(row[1])) continue // ligne sans date valide → ignorée
+    const formateurBrut = row[3] == null ? "" : String(row[3])
+    const formateurs = formateurBrut
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+    const lienBrut = row[4]
+    sessions.push({
+      idSession: String(id),
+      date: serialEnDate(row[1] as number),
+      thematique: String(row[2] ?? ""),
+      formateurs,
+      lienSupport:
+        lienBrut == null || lienBrut === "" ? undefined : String(lienBrut),
+    })
+  }
+  return sessions
+}
+
+export function parserFormationsParticipations(
+  sheet: XLSX.WorkSheet | undefined,
+): ParticipationsFormation {
+  const result: ParticipationsFormation = new Map()
+  if (!sheet) return result
+  const rows = lireLignes(sheet)
+  const headerIdx = rows.findIndex((r) => r[0] === "Consultant")
+  if (headerIdx === -1) return result
+  const header = rows[headerIdx]
+
+  // Colonnes session : à partir de l'index 2 (col A = Consultant, B = Total).
+  // On s'arrête à la première colonne nulle pour ignorer la queue vide.
+  const colonnesSessions: { col: number; id: string }[] = []
+  for (let c = 2; c < header.length; c++) {
+    const cell = header[c]
+    if (cell == null || cell === "") break
+    colonnesSessions.push({ col: c, id: String(cell) })
+  }
+
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i]
+    const nom = row[0]
+    if (nom == null || nom === "") continue
+    const participations = new Map<string, RoleFormation>()
+    for (const { col, id } of colonnesSessions) {
+      const v = row[col]
+      if (v === "F" || v === "P") participations.set(id, v)
+    }
+    result.set(String(nom), participations)
+  }
+  return result
+}
+
+// Vérifie que tous les noms de formateurs déclarés dans l'onglet Formations
+// existent au Référentiel. Permet de repérer les coquilles côté saisie.
+function alerterFormateursInconnus(
+  formations: SessionFormation[],
+  consultants: Consultant[],
+): void {
+  const noms = new Set(consultants.map((c) => c.nom))
+  const inconnus = new Set<string>()
+  for (const f of formations) {
+    for (const formateur of f.formateurs) {
+      if (!noms.has(formateur)) inconnus.add(formateur)
+    }
+  }
+  if (inconnus.size > 0) {
+    console.warn(
+      `[parser Formations] Formateurs absents du Référentiel : ${[...inconnus].join(", ")}`,
+    )
+  }
 }

@@ -2,9 +2,13 @@ import type {
   ConsultantMois,
   DashboardData,
   Evenement,
+  FormationConsultant,
+  FormationKPI,
   MoisData,
   MoisKey,
+  ParticipationsFormation,
   PresenceJour,
+  SessionFormation,
   StatutOKR,
 } from "./types"
 
@@ -373,4 +377,90 @@ export function evolutionTauxAtteinte(
     cle,
     taux: tauxAtteinte(data.mois[cle]),
   }))
+}
+
+// === Formations ===
+
+// Filtre les sessions par fenêtre temporelle. Si dateDebut/dateFin sont
+// omises, retourne toutes les sessions. Bornes inclusives.
+export function filtrerSessions(
+  sessions: SessionFormation[],
+  dateDebut?: Date,
+  dateFin?: Date,
+): SessionFormation[] {
+  return sessions.filter((s) => {
+    if (dateDebut && s.date < dateDebut) return false
+    if (dateFin && s.date > dateFin) return false
+    return true
+  })
+}
+
+export function computeFormationKPIs(
+  sessions: SessionFormation[],
+  participations: ParticipationsFormation,
+): FormationKPI {
+  // Restreint les codes "F"/"P" aux sessions de la fenêtre demandée.
+  const idsSessionsRetenues = new Set(sessions.map((s) => s.idSession))
+
+  // 1. Top formateurs : on prend la colonne `formateurs` des sessions
+  //    plutôt que de scanner les "F" de la matrice. C'est la source
+  //    d'autorité de l'onglet Formations (co-animation correctement gérée).
+  const compteurFormateurs = new Map<string, number>()
+  for (const session of sessions) {
+    for (const f of session.formateurs) {
+      compteurFormateurs.set(f, (compteurFormateurs.get(f) ?? 0) + 1)
+    }
+  }
+
+  // 2. Vue par consultant + top participants : on lit la matrice.
+  //    Animations = "F" sur sessions retenues ; participations = "P".
+  const parConsultant: FormationConsultant[] = []
+  const participantsUniques = new Set<string>()
+  for (const [nom, sessionsDuConsultant] of participations) {
+    let nbP = 0
+    let nbF = 0
+    for (const [idSession, role] of sessionsDuConsultant) {
+      if (!idsSessionsRetenues.has(idSession)) continue
+      if (role === "P") nbP++
+      else if (role === "F") nbF++
+    }
+    if (nbP + nbF > 0) participantsUniques.add(nom)
+    parConsultant.push({ nom, participations: nbP, animations: nbF })
+  }
+
+  const topFormateurs = [...compteurFormateurs.entries()]
+    .map(([nom, nb]) => ({ nom, nb }))
+    .sort(comparerNbDesc)
+    .slice(0, 5)
+
+  const topParticipants = parConsultant
+    .filter((c) => c.participations > 0)
+    .map((c) => ({ nom: c.nom, nb: c.participations }))
+    .sort(comparerNbDesc)
+    .slice(0, 5)
+
+  // Tri stable du détail par consultant : nb total (P+F) desc, puis nom.
+  parConsultant.sort((a, b) => {
+    const ta = a.participations + a.animations
+    const tb = b.participations + b.animations
+    if (tb !== ta) return tb - ta
+    return a.nom.localeCompare(b.nom, "fr")
+  })
+
+  return {
+    nbSessions: sessions.length,
+    nbParticipantsUniques: participantsUniques.size,
+    topFormateurs,
+    topParticipants,
+    parConsultant,
+  }
+}
+
+// Tri desc par nb, départage alphabétique pour rendre le résultat déterministe.
+function comparerNbDesc(
+  a: { nom: string; nb: number },
+  b: { nom: string; nb: number },
+): number {
+  if (b.nb !== a.nb) return b.nb - a.nb
+  return a.nom.localeCompare(b.nom, "fr")
 }
