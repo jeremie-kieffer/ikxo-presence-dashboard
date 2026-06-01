@@ -30,12 +30,16 @@ Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivant
 | Onglet | Rôle | Lecture par le dashboard |
 |---|---|---|
 | Convention | Documentation utilisateur | Non |
-| Référentiel | Liste des consultants actifs | Oui (filtrer les consultants à afficher) |
+| Référentiel | Liste des consultants (actifs + ex), col A = nom, B = Date d'entrée, C = Date de sortie | Oui (source consultants + détection d'incohérences) |
 | Événements | Calendrier XO Days, séminaires | Oui (overlay sur graphiques) |
 | Saisie YYYY-MM | Matrices de présence mensuelles | Oui (source principale) |
+| Formations | Catalogue des sessions de formation (id_session, date, thématique, formateur, lien_support) | Oui (section Formation) |
+| Formations_Participations | Matrice consultants × sessions ("F" = formateur, "P" = participant) | Oui (section Formation) |
 | Log | Format long auto-alimenté (squelette pour V2) | Non en V1 |
 | Synthèse mensuelle | KPI mensuels calculés en Excel | Optionnel (recalcul possible côté JS) |
 | Synthèse consultant | Vue consultant 3 mois | Optionnel |
+
+**Règle d'or sur le Référentiel** : on ne supprime **jamais** une ligne consultant. Quand un consultant quitte le cabinet, on remplit sa Date de sortie. Ça permet au dashboard de continuer à interpréter correctement l'historique sans flag d'incohérence.
 
 **Convention de saisie dans les onglets `Saisie YYYY-MM`** :
 
@@ -52,6 +56,19 @@ Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivant
 - Ligne 3 : en-têtes (col A = "Consultant", col B+ = dates au format `DD-mois`, dernières colonnes = "Total" et "Statut OKR")
 - Lignes 4 à 4+N : 1 ligne par consultant
 - Lignes suivantes (après une ligne vide) : 3 lignes événements (`XO Day`, `XO Product Day`, `Séminaire`)
+
+**Structure de l'onglet `Formations`** (catalogue) :
+- Ligne 1 : titre
+- Ligne 3 : en-têtes (`id_session`, `date`, `thématique`, `formateur`, `lien_support`)
+- Lignes suivantes : 1 session par ligne, triées chronologiquement
+- `id_session` au format `F-YYYY-NNN` (ex : `F-2026-007`)
+- `formateur` : un ou plusieurs noms, séparés par virgule en cas de co-animation. Chaque nom doit exister au Référentiel (sinon un warn console est émis par le parser).
+
+**Structure de l'onglet `Formations_Participations`** (matrice) :
+- Ligne 1 : titre
+- Ligne 3 : en-têtes (col A = "Consultant", col B = "Total" formule COUNTIF(F+P), col C+ = id_session)
+- Lignes suivantes : 1 consultant par ligne
+- Codes cellules : `F` (formateur, mise en forme conditionnelle bleue), `P` (participant, fond vert), vide (non concerné)
 
 ## KPI à afficher
 
@@ -92,6 +109,29 @@ Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivant
 **Graphique** :
 - Évolution mensuelle du taux d'atteinte (line chart) avec ligne de cible à 100%
 
+### Section Formation
+
+Section indépendante de la section Présence, accessible via le sélecteur Présence / Formation dans l'en-tête.
+
+**Cards KPI (4)** :
+1. **Sessions au catalogue** : nb total de sessions historiques (filtrable par date)
+2. **Participants uniques** : nb consultants avec ≥1 P ou F sur la fenêtre
+3. **Top formateur** : nom + nb d'animations
+4. **Top participant** : nom + nb de participations
+
+**Listes Top contributeurs** :
+- Top 5 formateurs par nb d'animations
+- Top 5 participants par nb de participations
+- Tri desc par nb, départage alphabétique français
+
+**Tableau des sessions** :
+- Colonnes : date, thématique, formateur(s), nb de participants, lien support
+- Tri : date ↓ (défaut), date ↑, nb participants ↓
+
+**Vue par consultant** :
+- Sélecteur consultant → liste de ses sessions (animées + participées), triées par date desc
+- Compte rapide : N animation(s) · M participation(s)
+
 ## Règles de calcul à implémenter (importantes)
 
 ```typescript
@@ -123,22 +163,23 @@ ikxo-presence-dashboard/
 │       └── suivi_presence_consultants.xlsx  # fichier source embarqué
 ├── src/
 │   ├── lib/
-│   │   ├── excel-parser.ts    # lecture du fichier Excel via SheetJS
-│   │   ├── kpi-calculators.ts # toutes les fonctions de calcul
-│   │   └── types.ts           # types TypeScript (Consultant, MoisData, Evenement, etc.)
+│   │   ├── excel-parser.ts    # lecture du fichier Excel via SheetJS (présence + formations)
+│   │   ├── kpi-calculators.ts # fonctions de calcul présence + computeFormationKPIs
+│   │   ├── format.ts          # helpers d'affichage (formatFr, formatDateCourte)
+│   │   └── types.ts           # types TypeScript (Consultant, MoisData, SessionFormation, etc.)
 │   ├── components/
 │   │   ├── KPICard.tsx
+│   │   ├── StatutBadge.tsx
+│   │   ├── ConsultantTable.tsx
 │   │   ├── views/
 │   │   │   ├── MonthView.tsx
-│   │   │   ├── WeekView.tsx
-│   │   │   └── QuarterView.tsx
-│   │   ├── charts/
-│   │   │   ├── DistributionChart.tsx
-│   │   │   ├── DayOfWeekChart.tsx
-│   │   │   ├── DailyTrendChart.tsx
-│   │   │   └── MonthlyTrendChart.tsx
-│   │   └── ConsultantTable.tsx
-│   ├── App.tsx
+│   │   │   ├── QuarterView.tsx
+│   │   │   └── FormationView.tsx
+│   │   └── charts/
+│   │       ├── DistributionChart.tsx
+│   │       ├── DayOfWeekChart.tsx
+│   │       └── MonthlyTrendChart.tsx
+│   ├── App.tsx                # sélecteur Section (Présence / Formation) + Vue (Mensuelle / Trimestrielle)
 │   └── main.tsx
 ├── tailwind.config.js
 ├── vite.config.ts
@@ -172,19 +213,37 @@ ikxo-presence-dashboard/
 
 ## Données de validation (pour tester les calculs)
 
-Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur les 3 mois disponibles :
+Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur les mois disponibles :
 
-| Mois | Consultants actifs | Présences totales | Atteinte | Moyenne | Pic |
-|---|---|---|---|---|---|
-| Févr. 2026 | 25 | ~73 | 60% | 2,9 j | 19/02 (15) — XO Product Day |
-| Mars 2026 | 26 | ~72 | 58% | 2,8 j | 26/03 (17) — XO Day |
-| Avril 2026 | 26 | ~69 | 77% | 2,7 j | 23/04 (24) — XO Day |
+### Section Présence
+
+| Mois | Actifs | Présences totales (1 + IC) | dont 1 (hors IC) | Atteinte | Moyenne | Pic |
+|---|---|---|---|---|---|---|
+| Févr. 2026 | 24 | 73 | 62 | 63% | 3,04 j | 19/02 (15) — XO Product Day |
+| Mars 2026 | 25 | 72 | 60 | 60% | 2,88 j | 26/03 (17) — XO Day |
+| Avril 2026 | 26 | **82** | **56** | **85%** | **3,15 j** | 23/04 (24) — XO Day |
+| Mai 2026 | 26 | 81 | 46 | 54% | 3,12 j | 28/05 (21) |
+| Juin 2026 | 27 | 3 | 2 | 0% | 0,11 j | 1/06 (3) — mois en cours |
+
+> **Note** : ces valeurs sont arrêtées à la donnée du commit HEAD au moment où ce tableau a été écrit. Elles évolueront à chaque mise à jour mensuelle du fichier source. Avril 2026 a été enrichi au commit `1b1023d` (refonte ergonomique) : avant cette refonte, les chiffres étaient ~69 présences totales / 77% / 2,7 j.
+
+### Section Formation (catalogue complet)
+
+| KPI | Valeur attendue |
+|---|---|
+| Nb sessions | 18 |
+| Nb participants uniques | 32 |
+| Top formateur | Jérémie Kieffer (8 animations) |
+| Top participant | Laureline Berthou (10 participations) |
+| Jérémie Kieffer (référentiel) | 7 P + 8 F = 15 (cohérent avec la formule Total Excel) |
 
 **Cas particuliers à valider** :
-- Zelal Aslan : marquée `M` en fév-mars (congé mat), `IC` en avril (8 présences). Doit être exclue du calcul fév-mars, comptée comme atteinte en avril.
-- Julien Calvao : `IC` sur les 3 mois (intercontrat permanent), 9-12 présences. Toujours atteint.
+- Zelal Aslan : marquée `M` en fév-mars (congé mat), `IC` en avril (11 IC). Doit être exclue du calcul fév-mars, comptée comme atteinte en avril.
+- Julien Calvao : `IC` sur tous les mois (intercontrat permanent), 9-12 présences. Toujours atteint.
 - Calixte Bailly : 1-0-1 sur fév-mars-avril. Doit apparaître en alerte "3 mois sous objectif".
 - Nacim Souni : 11-0-1. Signal d'alerte (chute brutale, à investiguer).
+- Agnes Bregeon : présente en juin sans entrée au Référentiel → signalée par `detecterIncoherences` comme `saisi_hors_referentiel`. À corriger côté saisie.
+- 6 ex-consultants au Référentiel (Anita Aladine, Camille Chansigaud, Emilien Rue, Gaetan Le Bail, Melchior R, Nicolas Renard) + Jérémie Kieffer (interne) : non saisis sur les 5 mois → 35 flags `absent_de_saisie`. Disparaîtront quand les `Date de sortie` seront remplies.
 
 ## Points d'attention pour le dev
 
