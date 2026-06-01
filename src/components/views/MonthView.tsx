@@ -13,6 +13,7 @@ import {
   presenceParJourSemaine,
   tauxAtteinte,
 } from "../../lib/kpi-calculators"
+import { couleurTauxOKR } from "../../lib/seuils-design"
 import type { DashboardData, MoisData } from "../../lib/types"
 import { DayOfWeekChart } from "../charts/DayOfWeekChart"
 import { DistributionChart } from "../charts/DistributionChart"
@@ -61,6 +62,7 @@ export function MonthView({
           sousLibelle={`${actifs - sousObj} sur ${actifs} actifs`}
           delta={deltaPourcentagePoints(taux, tauxPrec)}
           accent="bleu"
+          couleurValeur={couleurTauxOKR(taux)}
         />
         <KPICard
           titre="Présence moyenne par consultant"
@@ -68,6 +70,7 @@ export function MonthView({
           sousLibelle="Sur les consultants actifs (hors absences longues)"
           delta={deltaJours(moyenne, moyennePrec)}
           accent="vert"
+          couleurValeur="vert"
         />
         <KPICard
           titre="Consultants venus ≥1×"

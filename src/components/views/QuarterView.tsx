@@ -7,6 +7,7 @@ import {
   tauxAtteinteTrimestre,
   trimestreDuMois,
 } from "../../lib/kpi-calculators"
+import { couleurTauxOKR } from "../../lib/seuils-design"
 import type { DashboardData, MoisData } from "../../lib/types"
 import { MonthlyTrendChart } from "../charts/MonthlyTrendChart"
 import { KPICard } from "../KPICard"
@@ -48,6 +49,7 @@ export function QuarterView({
           valeur={`${Math.round(taux * 100)} %`}
           sousLibelle={`Moyenne des taux mensuels (${moisDispos})`}
           accent="bleu"
+          couleurValeur={couleurTauxOKR(taux)}
         />
         <KPICard
           titre="Consultants réguliers"
