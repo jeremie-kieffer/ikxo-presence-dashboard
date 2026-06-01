@@ -59,10 +59,10 @@ function App() {
   }
 
   return (
-    <main className="mx-auto min-h-full max-w-7xl p-6">
+    <main className="mx-auto min-h-full max-w-7xl border-t-4 border-ikxo-blue p-6">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="font-heading text-2xl font-semibold tracking-tight text-ikxo-blue">
             Dashboard IKXO
           </h1>
           <p className="text-sm text-slate-500">
@@ -251,7 +251,7 @@ function SelecteurSection({
   onChange: (s: Section) => void
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
+    <div className="inline-flex gap-1">
       {ONGLETS_SECTIONS.map((o) => (
         <button
           key={o.id}
@@ -259,8 +259,8 @@ function SelecteurSection({
           onClick={() => onChange(o.id)}
           className={
             section === o.id
-              ? "bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-              : "px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+              ? "border-b-2 border-ikxo-blue px-3 py-1.5 text-sm font-semibold text-ikxo-blue"
+              : "border-b-2 border-transparent px-3 py-1.5 text-sm text-gray-500 hover:text-ikxo-fluor"
           }
         >
           {o.label}

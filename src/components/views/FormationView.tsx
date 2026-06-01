@@ -48,7 +48,7 @@ export function FormationView({ data }: { data: DashboardData }) {
           titre="Sessions au catalogue"
           valeur={kpi.nbSessions}
           sousLibelle="depuis mars 2025"
-          accent="violet"
+          accent="bleu"
         />
         <KPICard
           titre="Participants uniques"
@@ -182,7 +182,7 @@ function SessionsTable({
                     href={s.lienSupport}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="text-ikxo-blue hover:text-ikxo-fluor hover:underline"
                   >
                     Lien
                   </a>

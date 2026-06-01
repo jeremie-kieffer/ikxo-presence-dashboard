@@ -98,19 +98,19 @@ export function ConsultantTable({
         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th
-              className="cursor-pointer px-5 py-2.5 text-left hover:bg-slate-100"
+              className="cursor-pointer px-5 py-2.5 text-left hover:text-ikxo-fluor"
               onClick={() => toggleTri("nom")}
             >
               Consultant {fleche("nom")}
             </th>
             <th
-              className="cursor-pointer px-5 py-2.5 text-right hover:bg-slate-100"
+              className="cursor-pointer px-5 py-2.5 text-right hover:text-ikxo-fluor"
               onClick={() => toggleTri("presences")}
             >
               Présences {fleche("presences")}
             </th>
             <th
-              className="cursor-pointer px-5 py-2.5 text-left hover:bg-slate-100"
+              className="cursor-pointer px-5 py-2.5 text-left hover:text-ikxo-fluor"
               onClick={() => toggleTri("statut")}
             >
               Statut {fleche("statut")}

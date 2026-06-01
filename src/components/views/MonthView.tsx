@@ -60,14 +60,14 @@ export function MonthView({
           valeur={`${Math.round(taux * 100)} %`}
           sousLibelle={`${actifs - sousObj} sur ${actifs} actifs`}
           delta={deltaPourcentagePoints(taux, tauxPrec)}
-          accent={taux >= 0.8 ? "vert" : "orange"}
+          accent="bleu"
         />
         <KPICard
           titre="Présence moyenne par consultant"
           valeur={`${formatFr(moyenne)} j`}
           sousLibelle="Sur les consultants actifs (hors absences longues)"
           delta={deltaJours(moyenne, moyennePrec)}
-          accent="bleu"
+          accent="vert"
         />
         <KPICard
           titre="Consultants venus ≥1×"
@@ -86,7 +86,7 @@ export function MonthView({
               ? `Dont ${jamais} jamais venu${jamais > 1 ? "s" : ""} ce mois`
               : "Aucun à zéro présence"
           }
-          accent={jamais > 0 ? "rouge" : "orange"}
+          accent="orange"
         />
       </div>
 
@@ -100,7 +100,7 @@ export function MonthView({
               ? `Le ${dateAffichage} — ${pic.evenement.type}`
               : `Le ${dateAffichage}`
           }
-          accent={pic.evenement ? "violet" : "neutre"}
+          accent="bleu"
         />
         <KPICard
           titre="Présence moyenne par jour"
@@ -121,7 +121,7 @@ export function MonthView({
             </div>
           }
           sousLibelle={`Sur ${mois.joursOuvres.length} jours ouvrés`}
-          accent="neutre"
+          accent="bleu"
         />
       </div>
 

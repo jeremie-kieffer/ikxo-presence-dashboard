@@ -37,9 +37,6 @@ export function QuarterView({
 
   const moisDispos = `${cles.length}/3 mois saisi${cles.length > 1 ? "s" : ""}`
   const sousTitre = `Q${tri.numero} ${tri.annee} — ${moisDispos}`
-  const tauxOK = taux >= 0.8
-  const tauxReguliers =
-    reguliers.total > 0 ? reguliers.atteints / reguliers.total : 0
 
   return (
     <div className="space-y-6">
@@ -50,13 +47,13 @@ export function QuarterView({
           titre="Taux d'atteinte OKR — trimestre"
           valeur={`${Math.round(taux * 100)} %`}
           sousLibelle={`Moyenne des taux mensuels (${moisDispos})`}
-          accent={tauxOK ? "vert" : "orange"}
+          accent="bleu"
         />
         <KPICard
           titre="Consultants réguliers"
           valeur={`${reguliers.atteints}/${reguliers.total}`}
           sousLibelle="Atteignent l'objectif chaque mois du trimestre"
-          accent={tauxReguliers >= 0.8 ? "vert" : "orange"}
+          accent="vert"
         />
         <KPICard
           titre="Pic du trimestre"
@@ -66,13 +63,13 @@ export function QuarterView({
               ? `Le ${formatDate(pic.date)} — ${pic.evenement.type}`
               : `Le ${formatDate(pic.date)}`
           }
-          accent={pic.evenement ? "violet" : "neutre"}
+          accent="bleu"
         />
         <KPICard
           titre="Consultants à risque"
           valeur={`${alertes.length}`}
           sousLibelle="Sous l'objectif sur tous les mois du trimestre"
-          accent={alertes.length > 0 ? "rouge" : "vert"}
+          accent="orange"
         />
       </div>
 

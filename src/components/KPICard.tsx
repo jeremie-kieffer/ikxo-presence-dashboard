@@ -10,13 +10,17 @@ interface Props {
   accent?: Accent
 }
 
+// Mapping accent → couleur de border-left (3px) selon la charte IKXO.
+// Note : rouge et violet sont mappés sur ikxo-orange et ikxo-blue car la
+// palette IKXO n'inclut pas ces deux teintes (le rose Product Club est
+// hors scope).
 const accentClasses: Record<Accent, string> = {
-  vert: "border-l-4 border-l-emerald-500",
-  orange: "border-l-4 border-l-amber-500",
-  rouge: "border-l-4 border-l-red-500",
-  bleu: "border-l-4 border-l-blue-500",
-  violet: "border-l-4 border-l-violet-500",
-  neutre: "border-l-4 border-l-slate-300",
+  vert: "border-l-[3px] border-l-ikxo-green",
+  orange: "border-l-[3px] border-l-ikxo-orange",
+  rouge: "border-l-[3px] border-l-ikxo-orange",
+  bleu: "border-l-[3px] border-l-ikxo-blue",
+  violet: "border-l-[3px] border-l-ikxo-blue",
+  neutre: "border-l-[3px] border-l-ikxo-blue",
 }
 
 export function KPICard({
@@ -33,7 +37,7 @@ export function KPICard({
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {titre}
       </p>
-      <div className="mt-2 text-3xl font-semibold text-slate-900">{valeur}</div>
+      <div className="mt-2 text-3xl font-semibold text-ikxo-blue">{valeur}</div>
       {sousLibelle && (
         <p className="mt-1 text-sm text-slate-500">{sousLibelle}</p>
       )}

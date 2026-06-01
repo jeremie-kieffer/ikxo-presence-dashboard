@@ -7,7 +7,15 @@
   --color-intercontrat: #3b82f6;
   --color-evenement: #8b5cf6;
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-ikxo-blue: #0c3867;
+  --color-ikxo-green: #6ea881;
+  --color-ikxo-orange: #ffbd59;
+  --color-ikxo-fluor: #01ca9c;
+
+  --font-sans: "Raleway", system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-heading: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
 }
 
 html,
