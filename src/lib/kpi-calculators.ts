@@ -2,6 +2,9 @@ import type {
   ConsultantMois,
   DashboardData,
   Evenement,
+  FeedbackFormation,
+  FeedbackKPIGlobal,
+  FeedbackParSession,
   FormationConsultant,
   FormationKPI,
   MoisData,
@@ -463,4 +466,150 @@ function comparerNbDesc(
 ): number {
   if (b.nb !== a.nb) return b.nb - a.nb
   return a.nom.localeCompare(b.nom, "fr")
+}
+
+// === Feedback Formation ===
+
+// Nb de participants (F + P) par session, calculé en parcourant la matrice
+// une seule fois. Utilisé à la fois par les KPI globaux et par session.
+export function nbParticipantsParSession(
+  participations: ParticipationsFormation,
+): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const sessions of participations.values()) {
+    for (const id of sessions.keys()) m.set(id, (m.get(id) ?? 0) + 1)
+  }
+  return m
+}
+
+export function computeFeedbackKPIs(
+  feedbacks: FeedbackFormation[],
+  participations: ParticipationsFormation,
+): FeedbackKPIGlobal {
+  const nbFeedbacksTotal = feedbacks.length
+  if (nbFeedbacksTotal === 0) {
+    return {
+      nbFeedbacksTotal: 0,
+      nbSessionsAvecFeedback: 0,
+      noteMoyenneGlobale: 0,
+      tauxRetourMoyen: 0,
+      distribApplication: {},
+    }
+  }
+
+  // Note moyenne : moyenne arithmétique simple sur tous les retours.
+  let sommeNotes = 0
+  const distribApplication: Record<string, number> = {}
+  const retoursParSession = new Map<string, number>()
+  for (const f of feedbacks) {
+    sommeNotes += f.noteGlobale
+    if (f.application) {
+      distribApplication[f.application] =
+        (distribApplication[f.application] ?? 0) + 1
+    }
+    retoursParSession.set(
+      f.idSession,
+      (retoursParSession.get(f.idSession) ?? 0) + 1,
+    )
+  }
+
+  // Taux de retour moyen : pondéré par session, pas par feedback. On
+  // calcule le ratio retours/participants pour chaque session ayant ≥1
+  // feedback, puis on moyenne ces ratios — sinon une session avec
+  // beaucoup de retours écraserait celles à peu de retours.
+  const nbPart = nbParticipantsParSession(participations)
+  let sommeRatios = 0
+  let nbRatios = 0
+  for (const [idSession, nbRetours] of retoursParSession) {
+    const denom = nbPart.get(idSession) ?? 0
+    if (denom === 0) continue // session sans participants connus : on ignore
+    sommeRatios += nbRetours / denom
+    nbRatios++
+  }
+  const tauxRetourMoyen = nbRatios > 0 ? sommeRatios / nbRatios : 0
+
+  return {
+    nbFeedbacksTotal,
+    nbSessionsAvecFeedback: retoursParSession.size,
+    noteMoyenneGlobale: sommeNotes / nbFeedbacksTotal,
+    tauxRetourMoyen,
+    distribApplication,
+  }
+}
+
+export function computeFeedbackParSession(
+  idSession: string,
+  feedbacks: FeedbackFormation[],
+  participations: ParticipationsFormation,
+): FeedbackParSession {
+  const filtres = feedbacks.filter((f) => f.idSession === idSession)
+  const nbRetours = filtres.length
+  const nbParticipants = nbParticipantsParSession(participations).get(idSession)
+    ?? 0
+  const tauxRetour = nbParticipants > 0 ? nbRetours / nbParticipants : 0
+
+  const distributionNotes: Record<number, number> = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  }
+  let somme = 0
+  for (const f of filtres) {
+    const n = f.noteGlobale
+    if (n >= 1 && n <= 5) distributionNotes[n]++
+    somme += n
+  }
+
+  return {
+    idSession,
+    nbRetours,
+    nbParticipants,
+    tauxRetour,
+    noteMoyenne: nbRetours > 0 ? somme / nbRetours : null,
+    distributionNotes,
+    feedbacks: filtres,
+  }
+}
+
+// Note moyenne reçue par formateur, sur l'ensemble de ses sessions animées.
+// Renvoie un Map<nomFormateur, { note, nbSessions }> où nbSessions = nb de
+// sessions animées AYANT au moins un feedback (sinon la note n'a pas de sens).
+export function noteMoyenneParFormateur(
+  feedbacks: FeedbackFormation[],
+  sessions: SessionFormation[],
+): Map<string, { note: number; nbSessionsAvecFeedback: number }> {
+  // Index : idSession → liste de notes
+  const notesParSession = new Map<string, number[]>()
+  for (const f of feedbacks) {
+    const arr = notesParSession.get(f.idSession) ?? []
+    arr.push(f.noteGlobale)
+    notesParSession.set(f.idSession, arr)
+  }
+
+  // Pour chaque session, on calcule sa note moyenne, puis on attribue cette
+  // moyenne à chaque formateur (1 par session en mono, plusieurs en co-anim).
+  // Une session avec 2 formateurs compte 1 fois pour chacun.
+  const totalParFormateur = new Map<string, { somme: number; nb: number }>()
+  for (const session of sessions) {
+    const notes = notesParSession.get(session.idSession)
+    if (!notes || notes.length === 0) continue
+    const moyenneSession = notes.reduce((a, b) => a + b, 0) / notes.length
+    for (const formateur of session.formateurs) {
+      const acc = totalParFormateur.get(formateur) ?? { somme: 0, nb: 0 }
+      acc.somme += moyenneSession
+      acc.nb += 1
+      totalParFormateur.set(formateur, acc)
+    }
+  }
+
+  const result = new Map<
+    string,
+    { note: number; nbSessionsAvecFeedback: number }
+  >()
+  for (const [nom, { somme, nb }] of totalParFormateur) {
+    result.set(nom, { note: somme / nb, nbSessionsAvecFeedback: nb })
+  }
+  return result
 }

@@ -5,6 +5,7 @@ import type {
   ConsultantMois,
   DashboardData,
   Evenement,
+  FeedbackFormation,
   MoisData,
   MoisKey,
   ParticipationsFormation,
@@ -51,6 +52,9 @@ export function parserBuffer(buffer: ArrayBuffer): DashboardData {
   const participationsFormations = parserFormationsParticipations(
     workbook.Sheets["Formations_Participations"],
   )
+  const feedbacksFormation = parserFormationFeedbacks(
+    workbook.Sheets["Formation_Feedbacks"],
+  )
 
   alerterFormateursInconnus(formations, consultants)
 
@@ -61,6 +65,7 @@ export function parserBuffer(buffer: ArrayBuffer): DashboardData {
     cles,
     formations,
     participationsFormations,
+    feedbacksFormation,
   }
 }
 
@@ -253,6 +258,39 @@ export function parserFormationsParticipations(
       if (v === "F" || v === "P") participations.set(id, v)
     }
     result.set(String(nom), participations)
+  }
+  return result
+}
+
+export function parserFormationFeedbacks(
+  sheet: XLSX.WorkSheet | undefined,
+): FeedbackFormation[] {
+  // Backward-compat : si l'onglet n'a pas encore été ajouté au xlsx, on
+  // renvoie un tableau vide plutôt que de planter. Le dashboard restera
+  // utilisable sans la section Feedback.
+  if (!sheet) return []
+  const rows = lireLignes(sheet)
+  const headerIdx = rows.findIndex((r) => r[0] === "id_response")
+  if (headerIdx === -1) return []
+
+  const result: FeedbackFormation[] = []
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i]
+    const id = row[0]
+    if (id == null || id === "") continue
+    if (!estSerialDate(row[2])) continue
+    const note = Number(row[3])
+    if (!Number.isFinite(note)) continue
+    result.push({
+      idResponse: String(id),
+      idSession: String(row[1] ?? ""),
+      timestamp: serialEnDate(row[2] as number),
+      noteGlobale: note,
+      application: row[4] == null ? "" : String(row[4]),
+      verbatimApprecie: row[5] == null ? "" : String(row[5]),
+      verbatimAmelioration: row[6] == null ? "" : String(row[6]),
+      verbatimCommentaire: row[7] == null ? "" : String(row[7]),
+    })
   }
   return result
 }

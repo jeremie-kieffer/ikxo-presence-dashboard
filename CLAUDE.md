@@ -35,6 +35,7 @@ Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivant
 | Saisie YYYY-MM | Matrices de présence mensuelles | Oui (source principale) |
 | Formations | Catalogue des sessions de formation (id_session, date, thématique, formateur, lien_support) | Oui (section Formation) |
 | Formations_Participations | Matrice consultants × sessions ("F" = formateur, "P" = participant) | Oui (section Formation) |
+| Formation_Feedbacks | Réponses Google Forms (8 colonnes : id_response, id_session, timestamp, note_globale, application, 3 verbatims) | Oui (drill-down par session) |
 | Log | Format long auto-alimenté (squelette pour V2) | Non en V1 |
 | Synthèse mensuelle | KPI mensuels calculés en Excel | Optionnel (recalcul possible côté JS) |
 | Synthèse consultant | Vue consultant 3 mois | Optionnel |
@@ -131,6 +132,30 @@ Section indépendante de la section Présence, accessible via le sélecteur Pré
 **Vue par consultant** :
 - Sélecteur consultant → liste de ses sessions (animées + participées), triées par date desc
 - Compte rapide : N animation(s) · M participation(s)
+
+### Module Feedback Formation
+
+Couche additionnelle au-dessus du module Formation. La donnée vient d'un Google Form unique réutilisé pour chaque session (formulaire de retours envoyé après chaque atelier).
+
+**Onglet Excel `Formation_Feedbacks`** — 8 colonnes :
+- `id_response` (clé unique, ex. `r-001`)
+- `id_session` (référence vers `Formations.id_session`)
+- `timestamp` (date de la réponse)
+- `note_globale` (entier 1-5)
+- `application` (valeur d'une enum : « Oui immédiatement », « Oui mais j'ai besoin de plus de pratique », « Pas sûr », « Non »)
+- `verbatim_apprecie` (texte libre — ce qui a marché)
+- `verbatim_amelioration` (texte libre — axes d'amélioration)
+- `verbatim_commentaire` (texte libre — autres retours, souvent vide)
+
+**Alimentation** : script `scripts/import_feedbacks.py` (Python, dépend de `openpyxl`). Lit tous les CSV `imports_feedbacks/feedback_F-YYYY-NNN.csv` exportés depuis Google Forms et les ajoute à l'onglet, taggés avec l'id_session extrait du nom de fichier. **Idempotent** : la clé `(id_session, timestamp)` empêche les doublons à chaque relance.
+
+**Affichage** (section Formation du dashboard) :
+- 3 cards globaux : note moyenne sur 5 (couleur sémantique ≥4 vert / 3-3.9 bleu / <3 orange), taux de retour moyen (réponses ÷ participants, moyenne pondérée par session), barre stackée de la distribution `application`.
+- Colonnes ajoutées au tableau des sessions : Note + Retours (ex. `8 / 10 (89 %)`).
+- **Drill-down inline** : click sur une ligne ouvre un accordéon avec mini-histogramme des notes, barre Application sur cette session, et 3 blocs de verbatims regroupés par catégorie (« Ce qui a marché » sur fond vert pâle, « Axes d'amélioration » sur fond gris, « Autres retours » sur fond bleu pâle, ce dernier masqué si vide). Session sans feedback → message « Aucun retour collecté ».
+- Top 5 formateurs enrichi : « Nom • N session(s) • X,X/5 » avec couleur de note.
+
+**Seuils sémantiques** centralisés dans `src/lib/seuils-design.ts` : `SEUIL_NOTE_FORMATION_BONNE = 4`, `SEUIL_NOTE_FORMATION_PASSABLE = 3`.
 
 ## Règles de calcul à implémenter (importantes)
 
@@ -236,6 +261,18 @@ Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur le
 | Top formateur | Jérémie Kieffer (8 animations) |
 | Top participant | Laureline Berthou (10 participations) |
 | Jérémie Kieffer (référentiel) | 7 P + 8 F = 15 (cohérent avec la formule Total Excel) |
+
+### Section Feedback Formation
+
+| KPI | Valeur attendue (commit HEAD) |
+|---|---|
+| Nb feedbacks total | 47 |
+| Nb sessions avec feedback | 7 (F-2026-003 → F-2026-009) |
+| Note moyenne globale | ≈ 4,40 / 5 |
+| Taux de retour moyen | ≈ 79 % |
+| Distribution application | « Oui immédiatement » 25, « Oui mais besoin pratique » 14, « Pas sûr » 5, « Non » 3 |
+| F-2026-009 (session la plus faible) | 5 retours / 9 participants, note 3,60 |
+| F-2026-006 (session la mieux notée) | 7 retours / 5 participants (taux > 100 %), note 4,86 |
 
 **Cas particuliers à valider** :
 - Zelal Aslan : marquée `M` en fév-mars (congé mat), `IC` en avril (11 IC). Doit être exclue du calcul fév-mars, comptée comme atteinte en avril.

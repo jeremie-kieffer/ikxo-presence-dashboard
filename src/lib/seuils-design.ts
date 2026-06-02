@@ -16,3 +16,14 @@ export function couleurTauxOKR(taux: number): CouleurValeur {
   if (taux < SEUIL_TAUX_OKR_SOUS_OBJECTIF) return "orange"
   return "bleu"
 }
+
+// Note de feedback formation (échelle 1-5). Convention : ≥4 satisfaisant,
+// 3-3.9 neutre, <3 alerte.
+export const SEUIL_NOTE_FORMATION_BONNE = 4
+export const SEUIL_NOTE_FORMATION_PASSABLE = 3
+
+export function couleurNoteFormation(note: number): CouleurValeur {
+  if (note >= SEUIL_NOTE_FORMATION_BONNE) return "vert"
+  if (note < SEUIL_NOTE_FORMATION_PASSABLE) return "orange"
+  return "bleu"
+}
