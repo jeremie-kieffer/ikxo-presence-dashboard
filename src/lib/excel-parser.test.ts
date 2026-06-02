@@ -28,7 +28,7 @@ describe("excel-parser : structure générale", () => {
     expect(agnes?.dateEntree?.getMonth()).toBe(5) // juin (0-indexé)
 
     const anita = data.consultants.find((c) => c.nom === "Anita Aladine")
-    expect(anita?.dateSortie?.getMonth()).toBe(2) // mars (0-indexé)
+    expect(anita?.dateSortie?.getMonth()).toBe(0) // janvier (0-indexé)
   })
 
   it("détecte les 5 onglets de saisie disponibles", () => {

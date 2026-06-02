@@ -259,15 +259,11 @@ describe("detecterIncoherences", () => {
     expect(incohs.filter((i) => i.consultant === "Jérémie Kieffer")).toEqual([])
   })
 
-  it("Anita Aladine (sortie 31/03/2026) : flaguée février + mars, pas après", () => {
+  it("Anita Aladine (sortie 31/01/2026) : jamais flaguée (déjà partie)", () => {
+    // Sa Date de sortie ayant été corrigée au 31/01/2026, Anita n'était plus
+    // active sur aucun des mois saisis (février→juin) → règle (b).
     const incohs = detecterIncoherences(data)
-    const moisAnita = incohs
-      .filter(
-        (i) => i.consultant === "Anita Aladine" && i.type === "absent_de_saisie",
-      )
-      .map((i) => i.mois)
-      .sort()
-    expect(moisAnita).toEqual(["2026-02", "2026-03"])
+    expect(incohs.filter((i) => i.consultant === "Anita Aladine")).toEqual([])
   })
 
   it("Agnes Bregeon (entrée 01/06/2026) : jamais flaguée", () => {
@@ -281,12 +277,11 @@ describe("detecterIncoherences", () => {
     expect(incohs.filter((i) => i.consultant === "Agnes Bregeon")).toEqual([])
   })
 
-  it("les seules incohérences réelles du fichier sont Anita en fév + mars", () => {
-    const incohs = detecterIncoherences(data)
-    expect(incohs).toEqual([
-      { mois: "2026-02", consultant: "Anita Aladine", type: "absent_de_saisie" },
-      { mois: "2026-03", consultant: "Anita Aladine", type: "absent_de_saisie" },
-    ])
+  it("le fichier ne contient plus aucune incohérence", () => {
+    // Cycle de vie entièrement renseigné au Référentiel (rôles, dates d'entrée
+    // et de sortie) → l'alerte est vide. Ce test se déclenchera si une saisie
+    // future réintroduit un trou légitime à corriger.
+    expect(detecterIncoherences(data)).toEqual([])
   })
 
   it("détecte un consultant saisi hors référentiel et un consultant actif manquant", () => {

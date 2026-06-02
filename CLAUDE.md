@@ -284,7 +284,7 @@ Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur le
 - Calixte Bailly : 1-0-1 sur fév-mars-avril. Doit apparaître en alerte "3 mois sous objectif".
 - Nacim Souni : 11-0-1. Signal d'alerte (chute brutale, à investiguer).
 - Agnes Bregeon : entrée 01/06/2026, désormais au Référentiel. Présente dans la Saisie de juin et non flaguée pour février→mai (règle (c), pas encore arrivée). Plus aucune incohérence la concernant.
-- 6 ex-consultants (Anita Aladine, Camille Chansigaud, Emilien Rue, Gaetan Le Bail, Melchior R, Nicolas Renard) + Jérémie Kieffer (interne) : leur `Date de sortie` / `Rôle` étant désormais remplis, ils ne génèrent plus de flags — **sauf Anita Aladine**, sortie le 31/03/2026 mais absente des Saisies de février et mars (où elle était encore active) → 2 flags `absent_de_saisie` légitimes. État du fichier au commit HEAD : l'alerte est ainsi passée de 36 flags à 2.
+- 6 ex-consultants (Anita Aladine, Camille Chansigaud, Emilien Rue, Gaetan Le Bail, Melchior R, Nicolas Renard) + Jérémie Kieffer (interne) : leur `Date de sortie` / `Rôle` étant désormais remplis, ils ne génèrent plus de flags. Anita Aladine, dont la sortie a été corrigée au 31/01/2026, n'était active sur aucun mois saisi → plus aucun flag. État du fichier au commit HEAD : l'alerte est passée de 36 flags à **0** (toute la donnée de cycle de vie est cohérente).
 
 ## Points d'attention pour le dev
 
