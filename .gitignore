@@ -32,3 +32,6 @@ dist-ssr
 # Fichiers verrous Excel
 ~$*.xlsx
 ~$*.xls
+
+# CSV bruts feedback formation (données sensibles, source de vérité = xlsx)
+imports_feedbacks/*.csv
