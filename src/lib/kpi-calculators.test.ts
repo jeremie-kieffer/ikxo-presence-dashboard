@@ -29,7 +29,7 @@ import {
   tauxAtteinteTrimestre,
   trimestreDuMois,
 } from "./kpi-calculators"
-import type { PresenceJour } from "./types"
+import type { Consultant, PresenceJour } from "./types"
 
 const buf = readFileSync(
   resolve(__dirname, "../../public/data/suivi_presence_consultants.xlsx"),
@@ -44,6 +44,15 @@ const d = (jour: number) => new Date(2026, 3, jour, 12) // helper avril
 const mkJour = (valeur: PresenceJour["valeur"]): PresenceJour => ({
   date: d(1),
   valeur,
+})
+const mkConsultant = (
+  nom: string,
+  opts: Partial<Omit<Consultant, "nom">> = {},
+): Consultant => ({
+  nom,
+  dateEntree: opts.dateEntree ?? null,
+  dateSortie: opts.dateSortie ?? null,
+  role: opts.role ?? "consultant",
 })
 
 describe("briques unitaires", () => {
@@ -235,59 +244,56 @@ describe("moisPrecedent", () => {
 })
 
 describe("detecterIncoherences", () => {
-  // Les 6 ex-consultants ajoutés au commit fd2cb52 n'ont pas (encore)
-  // de Date de sortie remplie au Référentiel ; Jérémie Kieffer y figure
-  // sans saisie de présence (interne, pas consultant en mission). Tous
-  // sont donc signalés "absent_de_saisie" sur chacun des 5 mois.
-  // « Agnes Bregeon » apparaît dans Saisie 2026-06 sans entrée au
-  // Référentiel : c'est une vraie incohérence à corriger côté saisie.
-  // Ces tests décrivent l'état du fichier au moment de leur écriture ;
-  // ils évolueront quand le Lead PM nettoiera ces cas.
-  const NOMS_REFERENTIEL_SANS_SAISIE = [
-    "Anita Aladine",
-    "Camille Chansigaud",
-    "Emilien Rue",
-    "Gaetan Le Bail",
-    "Melchior R",
-    "Nicolas Renard",
-    "Jérémie Kieffer",
-  ]
+  // Depuis le commit 2ac1ce9, le Référentiel renseigne les Date de sortie des
+  // ex-consultants et la colonne Rôle. L'alerte tient désormais compte du
+  // cycle de vie : un consultant n'est flagué "absent_de_saisie" pour un mois
+  // donné que s'il faisait partie de l'effectif suivi pendant ce mois.
+  //
+  // Un consultant N'EST PAS flagué si :
+  //   (a) son rôle est 'interne' (cas Jérémie Kieffer, fondateur),
+  //   (b) sa dateSortie est antérieure au début du mois,
+  //   (c) sa dateEntree est postérieure à la fin du mois.
 
-  it("35 'absent_de_saisie' (7 consultants × 5 mois)", () => {
+  it("Jérémie Kieffer (interne) : jamais flagué sur les 5 saisies", () => {
     const incohs = detecterIncoherences(data)
-    const absents = incohs.filter((i) => i.type === "absent_de_saisie")
-    expect(absents).toHaveLength(NOMS_REFERENTIEL_SANS_SAISIE.length * 5)
+    expect(incohs.filter((i) => i.consultant === "Jérémie Kieffer")).toEqual([])
   })
 
-  it("1 'saisi_hors_referentiel' : Agnes Bregeon en juin 2026", () => {
+  it("Anita Aladine (sortie 31/03/2026) : flaguée février + mars, pas après", () => {
     const incohs = detecterIncoherences(data)
-    const horsRef = incohs.filter((i) => i.type === "saisi_hors_referentiel")
-    expect(horsRef).toEqual([
-      {
-        mois: "2026-06",
-        consultant: "Agnes Bregeon",
-        type: "saisi_hors_referentiel",
-      },
+    const moisAnita = incohs
+      .filter(
+        (i) => i.consultant === "Anita Aladine" && i.type === "absent_de_saisie",
+      )
+      .map((i) => i.mois)
+      .sort()
+    expect(moisAnita).toEqual(["2026-02", "2026-03"])
+  })
+
+  it("Agnes Bregeon (entrée 01/06/2026) : jamais flaguée", () => {
+    // Présente dans la saisie de juin (donc plus 'saisi_hors_referentiel'
+    // depuis son ajout au Référentiel) et non encore arrivée de février à mai
+    // (logique (c) : entrée postérieure à la fin du mois). Aucune incohérence.
+    // NB : le brief mentionnait « flag sur 2026-02 à 2026-05 », mais ce serait
+    // un faux positif (Agnes n'avait pas à être saisie avant son arrivée) et
+    // contredirait la règle (c) du même brief — on suit donc la règle.
+    const incohs = detecterIncoherences(data)
+    expect(incohs.filter((i) => i.consultant === "Agnes Bregeon")).toEqual([])
+  })
+
+  it("les seules incohérences réelles du fichier sont Anita en fév + mars", () => {
+    const incohs = detecterIncoherences(data)
+    expect(incohs).toEqual([
+      { mois: "2026-02", consultant: "Anita Aladine", type: "absent_de_saisie" },
+      { mois: "2026-03", consultant: "Anita Aladine", type: "absent_de_saisie" },
     ])
   })
 
-  it("noms flagués 'absent_de_saisie' = exactement la liste connue", () => {
-    const incohs = detecterIncoherences(data)
-    const nomsAbsents = new Set(
-      incohs
-        .filter((i) => i.type === "absent_de_saisie")
-        .map((i) => i.consultant),
-    )
-    expect([...nomsAbsents].sort()).toEqual(
-      [...NOMS_REFERENTIEL_SANS_SAISIE].sort(),
-    )
-  })
-
-  it("détecte un consultant saisi hors référentiel et un consultant manquant", () => {
+  it("détecte un consultant saisi hors référentiel et un consultant actif manquant", () => {
     const dataForge: typeof data = {
       consultants: [
-        { nom: "Alice" },
-        { nom: "Bob" }, // au référentiel mais absent des saisies
+        mkConsultant("Alice"),
+        mkConsultant("Bob"), // actif au référentiel mais absent des saisies
       ],
       evenements: [],
       mois: {
@@ -322,8 +328,8 @@ describe("detecterIncoherences", () => {
   it("ignore un consultant non encore arrivé (dateEntree > mois)", () => {
     const dataForge: typeof data = {
       consultants: [
-        { nom: "Alice" },
-        { nom: "Bob", dateEntree: new Date(2026, 4, 1) }, // arrive en mai
+        mkConsultant("Alice"),
+        mkConsultant("Bob", { dateEntree: new Date(2026, 4, 1) }), // arrive en mai
       ],
       evenements: [],
       mois: {
@@ -333,6 +339,55 @@ describe("detecterIncoherences", () => {
           mois: 4,
           joursOuvres: [d(1)],
           lignes: [{ nom: "Alice", jours: [{ date: d(1), valeur: 1 }] }],
+          evenementsDuMois: [],
+        },
+      },
+      cles: ["2026-04"],
+    }
+    expect(detecterIncoherences(dataForge)).toEqual([])
+  })
+
+  it("ignore un consultant sorti avant le mois mais flague pendant son activité", () => {
+    const dataForge: typeof data = {
+      consultants: [mkConsultant("Bob", { dateSortie: new Date(2026, 2, 31) })], // sortie 31/03
+      evenements: [],
+      mois: {
+        "2026-03": {
+          cle: "2026-03",
+          annee: 2026,
+          mois: 3,
+          joursOuvres: [d(1)],
+          lignes: [],
+          evenementsDuMois: [],
+        },
+        "2026-04": {
+          cle: "2026-04",
+          annee: 2026,
+          mois: 4,
+          joursOuvres: [d(1)],
+          lignes: [],
+          evenementsDuMois: [],
+        },
+      },
+      cles: ["2026-03", "2026-04"],
+    }
+    // Flagué en mars (encore actif), pas en avril (déjà sorti).
+    expect(detecterIncoherences(dataForge)).toEqual([
+      { mois: "2026-03", consultant: "Bob", type: "absent_de_saisie" },
+    ])
+  })
+
+  it("un interne n'est jamais flagué même actif et absent des saisies", () => {
+    const dataForge: typeof data = {
+      consultants: [mkConsultant("Big Boss", { role: "interne" })],
+      evenements: [],
+      mois: {
+        "2026-04": {
+          cle: "2026-04",
+          annee: 2026,
+          mois: 4,
+          joursOuvres: [d(1)],
+          lignes: [],
           evenementsDuMois: [],
         },
       },

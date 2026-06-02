@@ -6,10 +6,16 @@ export type CelluleSaisie = 1 | "IC" | "M" | null
 
 export type StatutOKR = "atteint" | "sous_objectif" | "absence_longue"
 
+// 'interne' = membre du cabinet hors mission (ex. fondateur Jérémie Kieffer) :
+// jamais saisi dans les onglets de présence. 'consultant' = effectif suivi par
+// l'OKR. Défaut 'consultant' quand la colonne Rôle du Référentiel est vide.
+export type RoleConsultant = "consultant" | "interne"
+
 export interface Consultant {
   nom: string
-  dateEntree?: Date
-  dateSortie?: Date
+  dateEntree: Date | null
+  dateSortie: Date | null
+  role: RoleConsultant
 }
 
 export interface Evenement {

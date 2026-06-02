@@ -30,7 +30,7 @@ Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivant
 | Onglet | Rôle | Lecture par le dashboard |
 |---|---|---|
 | Convention | Documentation utilisateur | Non |
-| Référentiel | Liste des consultants (actifs + ex), col A = nom, B = Date d'entrée, C = Date de sortie | Oui (source consultants + détection d'incohérences) |
+| Référentiel | Liste des consultants (actifs + ex), col A = nom, B = Date d'entrée, C = Date de sortie, D = Rôle (`interne` ou vide = `consultant`) | Oui (source consultants + détection d'incohérences) |
 | Événements | Calendrier XO Days, séminaires | Oui (overlay sur graphiques) |
 | Saisie YYYY-MM | Matrices de présence mensuelles | Oui (source principale) |
 | Formations | Catalogue des sessions de formation (id_session, date, thématique, formateur, lien_support) | Oui (section Formation) |
@@ -41,6 +41,10 @@ Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivant
 | Synthèse consultant | Vue consultant 3 mois | Optionnel |
 
 **Règle d'or sur le Référentiel** : on ne supprime **jamais** une ligne consultant. Quand un consultant quitte le cabinet, on remplit sa Date de sortie. Ça permet au dashboard de continuer à interpréter correctement l'historique sans flag d'incohérence.
+
+**Logique de l'alerte d'incohérences** (`detecterIncoherences` dans `kpi-calculators.ts`) : pour chaque mois saisi, on confronte les noms saisis au Référentiel.
+- `saisi_hors_referentiel` : nom présent dans la Saisie mais absent du Référentiel (à corriger côté saisie).
+- `absent_de_saisie` : consultant du Référentiel absent de la Saisie du mois — **mais uniquement s'il faisait partie de l'effectif suivi ce mois-là**. Un consultant n'est **pas** flagué si : (a) son `role` est `interne` (cas Jérémie Kieffer, fondateur hors mission), (b) sa `dateSortie` est antérieure au début du mois (déjà parti), ou (c) sa `dateEntree` est postérieure à la fin du mois (pas encore arrivé). Cette logique de cycle de vie évite les faux positifs sur les ex-consultants et les futurs entrants : bien remplir Rôle / Date d'entrée / Date de sortie au Référentiel suffit à faire disparaître les flags illégitimes.
 
 **Convention de saisie dans les onglets `Saisie YYYY-MM`** :
 
@@ -279,8 +283,8 @@ Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur le
 - Julien Calvao : `IC` sur tous les mois (intercontrat permanent), 9-12 présences. Toujours atteint.
 - Calixte Bailly : 1-0-1 sur fév-mars-avril. Doit apparaître en alerte "3 mois sous objectif".
 - Nacim Souni : 11-0-1. Signal d'alerte (chute brutale, à investiguer).
-- Agnes Bregeon : présente en juin sans entrée au Référentiel → signalée par `detecterIncoherences` comme `saisi_hors_referentiel`. À corriger côté saisie.
-- 6 ex-consultants au Référentiel (Anita Aladine, Camille Chansigaud, Emilien Rue, Gaetan Le Bail, Melchior R, Nicolas Renard) + Jérémie Kieffer (interne) : non saisis sur les 5 mois → 35 flags `absent_de_saisie`. Disparaîtront quand les `Date de sortie` seront remplies.
+- Agnes Bregeon : entrée 01/06/2026, désormais au Référentiel. Présente dans la Saisie de juin et non flaguée pour février→mai (règle (c), pas encore arrivée). Plus aucune incohérence la concernant.
+- 6 ex-consultants (Anita Aladine, Camille Chansigaud, Emilien Rue, Gaetan Le Bail, Melchior R, Nicolas Renard) + Jérémie Kieffer (interne) : leur `Date de sortie` / `Rôle` étant désormais remplis, ils ne génèrent plus de flags — **sauf Anita Aladine**, sortie le 31/03/2026 mais absente des Saisies de février et mars (où elle était encore active) → 2 flags `absent_de_saisie` légitimes. État du fichier au commit HEAD : l'alerte est ainsi passée de 36 flags à 2.
 
 ## Points d'attention pour le dev
 

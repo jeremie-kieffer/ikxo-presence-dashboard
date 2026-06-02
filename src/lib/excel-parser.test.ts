@@ -14,8 +14,21 @@ const arrayBuffer = buf.buffer.slice(
 const data = parserBuffer(arrayBuffer)
 
 describe("excel-parser : structure générale", () => {
-  it("charge 33 consultants au référentiel (26 actifs + 7 ajoutés au commit fd2cb52)", () => {
-    expect(data.consultants).toHaveLength(33)
+  it("charge 34 consultants au référentiel (26 actifs + 6 ex + Jérémie interne + Agnes Bregeon)", () => {
+    expect(data.consultants).toHaveLength(34)
+  })
+
+  it("lit le rôle et les dates du Référentiel (Jérémie interne, Agnes entrée juin)", () => {
+    const jeremie = data.consultants.find((c) => c.nom === "Jérémie Kieffer")
+    expect(jeremie?.role).toBe("interne")
+
+    const agnes = data.consultants.find((c) => c.nom === "Agnes Bregeon")
+    expect(agnes?.role).toBe("consultant") // colonne Rôle vide → défaut
+    expect(agnes?.dateEntree?.getFullYear()).toBe(2026)
+    expect(agnes?.dateEntree?.getMonth()).toBe(5) // juin (0-indexé)
+
+    const anita = data.consultants.find((c) => c.nom === "Anita Aladine")
+    expect(anita?.dateSortie?.getMonth()).toBe(2) // mars (0-indexé)
   })
 
   it("détecte les 5 onglets de saisie disponibles", () => {

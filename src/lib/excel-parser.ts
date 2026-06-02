@@ -10,6 +10,7 @@ import type {
   MoisKey,
   ParticipationsFormation,
   PresenceJour,
+  RoleConsultant,
   RoleFormation,
   SessionFormation,
 } from "./types"
@@ -82,11 +83,21 @@ function parserReferentiel(sheet: XLSX.WorkSheet | undefined): Consultant[] {
     if (nom == null || nom === "") continue
     consultants.push({
       nom: String(nom),
-      dateEntree: estSerialDate(row[1]) ? serialEnDate(row[1]) : undefined,
-      dateSortie: estSerialDate(row[2]) ? serialEnDate(row[2]) : undefined,
+      dateEntree: estSerialDate(row[1]) ? serialEnDate(row[1]) : null,
+      dateSortie: estSerialDate(row[2]) ? serialEnDate(row[2]) : null,
+      role: normaliserRole(row[3]),
     })
   }
   return consultants
+}
+
+// Colonne D « Rôle » du Référentiel. Vide → 'consultant' (cas par défaut),
+// « interne » (insensible à la casse et aux espaces) → 'interne'.
+function normaliserRole(v: unknown): RoleConsultant {
+  if (typeof v === "string" && v.trim().toLowerCase() === "interne") {
+    return "interne"
+  }
+  return "consultant"
 }
 
 function parserEvenements(sheet: XLSX.WorkSheet | undefined): Evenement[] {

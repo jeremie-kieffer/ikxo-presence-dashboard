@@ -251,11 +251,13 @@ export function detecterIncoherences(data: DashboardData): Incoherence[] {
 
     for (const c of data.consultants) {
       if (nomsSaisis.has(c.nom)) continue
-      // Si dateEntree est postérieure à ce mois, le consultant n'était pas
-      // encore arrivé : ce n'est pas une incohérence.
-      if (c.dateEntree && estPosterieurAuMois(c.dateEntree, m.annee, m.mois)) continue
-      // Idem si dateSortie est antérieure.
+      // (a) Les internes (ex. fondateur Jérémie Kieffer) ne sont pas des
+      // consultants en mission : ils n'apparaissent jamais dans la saisie.
+      if (c.role === "interne") continue
+      // (b) Sorti avant le début du mois : plus dans l'effectif suivi.
       if (c.dateSortie && estAnterieurAuMois(c.dateSortie, m.annee, m.mois)) continue
+      // (c) Pas encore arrivé à la fin du mois : entrée postérieure.
+      if (c.dateEntree && estPosterieurAuMois(c.dateEntree, m.annee, m.mois)) continue
       result.push({ mois: cle, consultant: c.nom, type: "absent_de_saisie" })
     }
   }
