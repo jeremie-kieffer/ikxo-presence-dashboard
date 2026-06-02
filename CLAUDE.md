@@ -23,6 +23,8 @@ Pas de backend, pas de base de données. Tout est statique. L'utilisateur upload
 
 **À discuter avec Claude Code** : le mode "upload manuel" vs "fichier embarqué dans le repo". Recommandation : fichier embarqué = plus simple, pas de friction à chaque consultation, mais nécessite un redéploiement à chaque mise à jour mensuelle (1 commande, automatisable).
 
+**Date de dernière mise à jour des données** (affichée dans la sidebar sous « Dashboard IKXO ») : injectée **au build** via le `define` Vite `__DATE_MISE_A_JOUR__` (`vite.config.ts`), exposée en `DashboardData.dateMiseAJour` par `chargerFichier`. Elle avance donc à chaque build = chaque push qui redéploie sur Cloudflare. On n'utilise **pas** le header HTTP `Last-Modified` : Cloudflare Pages ne le sert pas pour les fichiers statiques (seulement un `ETag`).
+
 ## Source de données
 
 Le fichier source `suivi_presence_consultants.xlsx` contient les onglets suivants :

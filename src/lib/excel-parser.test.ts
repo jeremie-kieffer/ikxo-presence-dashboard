@@ -48,11 +48,12 @@ describe("excel-parser : structure générale", () => {
   })
 })
 
-describe("chargerFichier : date de mise à jour (header Last-Modified)", () => {
+describe("chargerFichier : date de mise à jour (injectée au build)", () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  // Réponse fetch minimale : buffer xlsx réel + header Last-Modified contrôlé.
-  const stubFetch = (lastModified: string | null) => {
+  // Réponse fetch minimale : buffer xlsx réel. Les headers HTTP n'influencent
+  // plus la date (Cloudflare ne sert pas Last-Modified) → on n'en fournit pas.
+  const stubFetch = () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({
@@ -60,34 +61,25 @@ describe("chargerFichier : date de mise à jour (header Last-Modified)", () => {
         status: 200,
         statusText: "OK",
         arrayBuffer: async () => arrayBuffer,
-        headers: {
-          get: (name: string) =>
-            name.toLowerCase() === "last-modified" ? lastModified : null,
-        },
+        headers: { get: () => null },
       })),
     )
   }
 
-  it("parse un Last-Modified valide en Date", async () => {
-    stubFetch("Tue, 02 Jun 2026 15:30:00 GMT")
+  it("expose la date du build, indépendamment des headers HTTP", async () => {
+    stubFetch()
     const d = await chargerFichier()
-    expect(d.dateMiseAJour).toEqual(new Date("Tue, 02 Jun 2026 15:30:00 GMT"))
+    expect(d.dateMiseAJour).toBeInstanceOf(Date)
+    expect(Number.isNaN(d.dateMiseAJour!.getTime())).toBe(false)
+    expect(d.dateMiseAJour).toEqual(new Date(__DATE_MISE_A_JOUR__))
   })
 
-  it("dateMiseAJour = null si le header est absent", async () => {
-    stubFetch(null)
-    const d = await chargerFichier()
-    expect(d.dateMiseAJour).toBeNull()
+  it("__DATE_MISE_A_JOUR__ est bien injecté en mode test (config Vite partagée)", () => {
+    expect(typeof __DATE_MISE_A_JOUR__).toBe("string")
+    expect(Number.isNaN(new Date(__DATE_MISE_A_JOUR__).getTime())).toBe(false)
   })
 
-  it("dateMiseAJour = null si le header est invalide (pas de crash)", async () => {
-    stubFetch("pas une date")
-    const d = await chargerFichier()
-    expect(d.dateMiseAJour).toBeNull()
-    expect(d.consultants.length).toBeGreaterThan(0) // le reste est bien parsé
-  })
-
-  it("parserBuffer seul (sans header) → dateMiseAJour null", () => {
+  it("parserBuffer seul (sans date fournie) → dateMiseAJour null", () => {
     expect(parserBuffer(arrayBuffer).dateMiseAJour).toBeNull()
   })
 })

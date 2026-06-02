@@ -28,16 +28,16 @@ export async function chargerFichier(
     )
   }
   const buffer = await response.arrayBuffer()
-  // Le header Last-Modified du xlsx statique reflète la date du dernier
-  // déploiement (= dernier push). Absent ou invalide → null, sans fallback
-  // sur la date du jour qui donnerait une fausse impression de fraîcheur.
-  const dateMiseAJour = parserLastModified(response.headers.get("last-modified"))
-  return parserBuffer(buffer, dateMiseAJour)
+  return parserBuffer(buffer, dateDuBuild())
 }
 
-function parserLastModified(header: string | null): Date | null {
-  if (!header) return null
-  const d = new Date(header)
+// Date de fraîcheur des données = date du dernier build, injectée par Vite
+// (define __DATE_MISE_A_JOUR__). Cloudflare Pages ne sert pas de header
+// Last-Modified pour les fichiers statiques (seulement un ETag), on ne peut
+// donc pas la déduire de la réponse HTTP. La constante avance à chaque build
+// (= chaque push qui redéploie). Garde-fou isNaN par sûreté → null.
+function dateDuBuild(): Date | null {
+  const d = new Date(__DATE_MISE_A_JOUR__)
   return Number.isNaN(d.getTime()) ? null : d
 }
 
