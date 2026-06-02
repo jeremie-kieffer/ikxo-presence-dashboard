@@ -57,20 +57,20 @@ export function FormationView({ data }: { data: DashboardData }) {
           accent="bleu"
         />
         <KPICard
-          titre="Top formateur"
-          valeur={topFormateur?.nom ?? "—"}
-          sousLibelle={
-            topFormateur ? `${topFormateur.nb} session(s) animée(s)` : undefined
-          }
-          accent="vert"
-        />
-        <KPICard
           titre="Top participant"
           valeur={topParticipant?.nom ?? "—"}
           sousLibelle={
             topParticipant
               ? `${topParticipant.nb} participation(s)`
               : undefined
+          }
+          accent="vert"
+        />
+        <KPICard
+          titre="Top formateur"
+          valeur={topFormateur?.nom ?? "—"}
+          sousLibelle={
+            topFormateur ? `${topFormateur.nb} session(s) animée(s)` : undefined
           }
           accent="vert"
         />
