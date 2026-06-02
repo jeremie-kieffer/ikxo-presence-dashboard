@@ -17,7 +17,8 @@ type Vue = "mensuelle" | "trimestre"
 const TITRES_MODULES: Record<Module, { titre: string; sousTitre: string }> = {
   presence: {
     titre: "Présence",
-    sousTitre: "Suivi de l'objectif « ≥2 jours/mois au bureau »",
+    sousTitre:
+      "Suivi de la présence sur site des consultants — objectif ≥2 jours/mois au bureau",
   },
   formation: {
     titre: "Formation",
@@ -257,7 +258,7 @@ function SelecteurVue({
   onChange: (v: Vue) => void
 }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-md border border-slate-300 bg-white shadow-sm">
+    <div className="inline-flex overflow-hidden rounded-md border border-slate-300 shadow-sm">
       {ONGLETS_VUES.map((o) => (
         <button
           key={o.id}
@@ -265,8 +266,8 @@ function SelecteurVue({
           onClick={() => onChange(o.id)}
           className={
             vue === o.id
-              ? "bg-slate-900 px-3 py-1.5 text-sm font-medium text-white"
-              : "px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+              ? "bg-ikxo-blue px-3 py-1.5 text-sm font-medium text-white"
+              : "bg-gray-100 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200"
           }
         >
           {o.label}
@@ -281,14 +282,20 @@ function BandeauIncoherences({
 }: {
   incoherences: Incoherence[]
 }) {
+  // <details> natif : accessible, fonctionne sans state React, et la
+  // rotation du chevron est gérée via group-open: en CSS pur.
+  const n = incoherences.length
+  const pluriel = n > 1 ? "s" : ""
   return (
-    <div className="mb-6 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
-      <p className="mb-1 font-medium text-amber-900">
-        ⚠ {incoherences.length} incohérence
-        {incoherences.length > 1 ? "s" : ""} détectée
-        {incoherences.length > 1 ? "s" : ""} entre les saisies et le référentiel
-      </p>
-      <ul className="list-disc space-y-0.5 pl-6 text-amber-800">
+    <details className="group mb-6 rounded-md border border-amber-300 bg-amber-50 text-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 font-medium text-amber-900">
+        <span>
+          ⚠ {n} incohérence{pluriel} détectée{pluriel} entre les saisies et le
+          référentiel
+        </span>
+        <ChevronIcon />
+      </summary>
+      <ul className="list-disc space-y-0.5 px-4 pb-4 pl-10 text-amber-800">
         {incoherences.slice(0, 5).map((i, idx) => (
           <li key={idx}>
             <span className="font-medium">{i.consultant}</span> ({i.mois}) —{" "}
@@ -297,11 +304,30 @@ function BandeauIncoherences({
               : "saisi pour ce mois mais absent du référentiel"}
           </li>
         ))}
-        {incoherences.length > 5 && (
-          <li>… et {incoherences.length - 5} autre(s)</li>
-        )}
+        {n > 5 && <li>… et {n - 5} autre(s)</li>}
       </ul>
-    </div>
+    </details>
+  )
+}
+
+// Chevron Tabler (chevron-down). Pivote de -90° quand <details> est fermé
+// pour devenir un chevron-right — une seule icône, animation CSS pure.
+function ChevronIcon() {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className="shrink-0 -rotate-90 transition-transform duration-150 group-open:rotate-0"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   )
 }
 

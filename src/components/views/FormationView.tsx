@@ -77,8 +77,8 @@ export function FormationView({ data }: { data: DashboardData }) {
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <TopList titre="Top 5 formateurs" lignes={kpi.topFormateurs} />
         <TopList titre="Top 5 participants" lignes={kpi.topParticipants} />
+        <TopList titre="Top 5 formateurs" lignes={kpi.topFormateurs} />
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
