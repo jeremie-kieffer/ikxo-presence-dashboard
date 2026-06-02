@@ -28,10 +28,23 @@ export async function chargerFichier(
     )
   }
   const buffer = await response.arrayBuffer()
-  return parserBuffer(buffer)
+  // Le header Last-Modified du xlsx statique reflète la date du dernier
+  // déploiement (= dernier push). Absent ou invalide → null, sans fallback
+  // sur la date du jour qui donnerait une fausse impression de fraîcheur.
+  const dateMiseAJour = parserLastModified(response.headers.get("last-modified"))
+  return parserBuffer(buffer, dateMiseAJour)
 }
 
-export function parserBuffer(buffer: ArrayBuffer): DashboardData {
+function parserLastModified(header: string | null): Date | null {
+  if (!header) return null
+  const d = new Date(header)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+export function parserBuffer(
+  buffer: ArrayBuffer,
+  dateMiseAJour: Date | null = null,
+): DashboardData {
   const workbook = XLSX.read(buffer)
 
   const consultants = parserReferentiel(workbook.Sheets["Référentiel"])
@@ -60,6 +73,7 @@ export function parserBuffer(buffer: ArrayBuffer): DashboardData {
   alerterFormateursInconnus(formations, consultants)
 
   return {
+    dateMiseAJour,
     consultants,
     evenements,
     mois,

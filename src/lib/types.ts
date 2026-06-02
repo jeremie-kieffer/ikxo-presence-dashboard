@@ -47,6 +47,10 @@ export interface MoisData {
 }
 
 export interface DashboardData {
+  // Date de dernière synchronisation des données = header HTTP Last-Modified
+  // du xlsx servi en statique (reflète la date du dernier push/déploiement).
+  // null si le header est absent ou invalide (ex. parsing direct d'un buffer).
+  dateMiseAJour: Date | null
   consultants: Consultant[] // référentiel maître (onglet Référentiel)
   evenements: Evenement[]
   mois: Record<MoisKey, MoisData>

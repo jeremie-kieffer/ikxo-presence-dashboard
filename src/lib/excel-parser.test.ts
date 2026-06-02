@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
-import { describe, expect, it } from "vitest"
-import { parserBuffer } from "./excel-parser"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { chargerFichier, parserBuffer } from "./excel-parser"
 
 const buf = readFileSync(
   resolve(__dirname, "../../public/data/suivi_presence_consultants.xlsx"),
@@ -45,6 +45,50 @@ describe("excel-parser : structure générale", () => {
     expect(data.evenements).toHaveLength(3)
     const types = data.evenements.map((e) => e.type).sort()
     expect(types).toEqual(["XO Day", "XO Day", "XO Product Day"])
+  })
+})
+
+describe("chargerFichier : date de mise à jour (header Last-Modified)", () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  // Réponse fetch minimale : buffer xlsx réel + header Last-Modified contrôlé.
+  const stubFetch = (lastModified: string | null) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        arrayBuffer: async () => arrayBuffer,
+        headers: {
+          get: (name: string) =>
+            name.toLowerCase() === "last-modified" ? lastModified : null,
+        },
+      })),
+    )
+  }
+
+  it("parse un Last-Modified valide en Date", async () => {
+    stubFetch("Tue, 02 Jun 2026 15:30:00 GMT")
+    const d = await chargerFichier()
+    expect(d.dateMiseAJour).toEqual(new Date("Tue, 02 Jun 2026 15:30:00 GMT"))
+  })
+
+  it("dateMiseAJour = null si le header est absent", async () => {
+    stubFetch(null)
+    const d = await chargerFichier()
+    expect(d.dateMiseAJour).toBeNull()
+  })
+
+  it("dateMiseAJour = null si le header est invalide (pas de crash)", async () => {
+    stubFetch("pas une date")
+    const d = await chargerFichier()
+    expect(d.dateMiseAJour).toBeNull()
+    expect(d.consultants.length).toBeGreaterThan(0) // le reste est bien parsé
+  })
+
+  it("parserBuffer seul (sans header) → dateMiseAJour null", () => {
+    expect(parserBuffer(arrayBuffer).dateMiseAJour).toBeNull()
   })
 })
 

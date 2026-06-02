@@ -77,7 +77,11 @@ function App() {
       className="grid min-h-full border-t-4 border-ikxo-blue"
       style={{ gridTemplateColumns: "220px 1fr" }}
     >
-      <Sidebar module={module} onChange={setModule} />
+      <Sidebar
+        module={module}
+        onChange={setModule}
+        dateMiseAJour={data.dateMiseAJour}
+      />
       <main className="px-6 py-6">
         <header className="mb-6">
           <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">

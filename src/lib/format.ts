@@ -10,3 +10,16 @@ export function formatDateCourte(d: Date): string {
     .toString()
     .padStart(2, "0")}`
 }
+
+// Libellé de fraîcheur des données affiché dans la sidebar.
+// Retourne null si la date est absente (pas de placeholder bancal).
+// Ex : libelleMiseAJour(new Date('2026-06-02')) → "Données à jour au 2 juin 2026".
+export function libelleMiseAJour(d: Date | null): string | null {
+  if (!d) return null
+  const date = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d)
+  return `Données à jour au ${date}`
+}

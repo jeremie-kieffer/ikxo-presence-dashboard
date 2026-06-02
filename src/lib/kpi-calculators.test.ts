@@ -286,6 +286,7 @@ describe("detecterIncoherences", () => {
 
   it("détecte un consultant saisi hors référentiel et un consultant actif manquant", () => {
     const dataForge: typeof data = {
+      dateMiseAJour: null,
       consultants: [
         mkConsultant("Alice"),
         mkConsultant("Bob"), // actif au référentiel mais absent des saisies
@@ -322,6 +323,7 @@ describe("detecterIncoherences", () => {
 
   it("ignore un consultant non encore arrivé (dateEntree > mois)", () => {
     const dataForge: typeof data = {
+      dateMiseAJour: null,
       consultants: [
         mkConsultant("Alice"),
         mkConsultant("Bob", { dateEntree: new Date(2026, 4, 1) }), // arrive en mai
@@ -344,6 +346,7 @@ describe("detecterIncoherences", () => {
 
   it("ignore un consultant sorti avant le mois mais flague pendant son activité", () => {
     const dataForge: typeof data = {
+      dateMiseAJour: null,
       consultants: [mkConsultant("Bob", { dateSortie: new Date(2026, 2, 31) })], // sortie 31/03
       evenements: [],
       mois: {
@@ -374,6 +377,7 @@ describe("detecterIncoherences", () => {
 
   it("un interne n'est jamais flagué même actif et absent des saisies", () => {
     const dataForge: typeof data = {
+      dateMiseAJour: null,
       consultants: [mkConsultant("Big Boss", { role: "interne" })],
       evenements: [],
       mois: {

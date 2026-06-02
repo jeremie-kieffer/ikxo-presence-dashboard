@@ -2,6 +2,8 @@
 // (Mensuelle/Trimestrielle/mois) restent dans le main pour distinguer
 // nav primaire et filtres contextuels.
 
+import { libelleMiseAJour } from "../lib/format"
+
 export type Module = "presence" | "formation"
 
 type IconName = "calendar" | "school" | "sparkles" | "user"
@@ -19,16 +21,22 @@ const MODULES_A_VENIR: { label: string; icon: IconName }[] = [
 export function Sidebar({
   module,
   onChange,
+  dateMiseAJour = null,
 }: {
   module: Module
   onChange: (m: Module) => void
+  dateMiseAJour?: Date | null
 }) {
+  const libelleMaj = libelleMiseAJour(dateMiseAJour)
   return (
     <aside className="flex h-full flex-col bg-gray-50 [border-right:0.5px_solid_#e5e7eb]">
       <div className="px-5 pb-4 pt-6">
         <h1 className="font-heading text-lg font-semibold tracking-tight text-ikxo-blue">
           Dashboard IKXO
         </h1>
+        {libelleMaj && (
+          <p className="mt-1 text-xs text-gray-500">{libelleMaj}</p>
+        )}
       </div>
       <div className="[border-top:0.5px_solid_#e5e7eb]" />
 
