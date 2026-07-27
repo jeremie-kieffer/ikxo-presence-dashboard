@@ -1,4 +1,5 @@
 import type {
+  Consultant,
   ConsultantMois,
   DashboardData,
   Evenement,
@@ -251,17 +252,39 @@ export function detecterIncoherences(data: DashboardData): Incoherence[] {
 
     for (const c of data.consultants) {
       if (nomsSaisis.has(c.nom)) continue
-      // (a) Les internes (ex. fondateur Jérémie Kieffer) ne sont pas des
-      // consultants en mission : ils n'apparaissent jamais dans la saisie.
-      if (c.role === "interne") continue
-      // (b) Sorti avant le début du mois : plus dans l'effectif suivi.
-      if (c.dateSortie && estAnterieurAuMois(c.dateSortie, m.annee, m.mois)) continue
-      // (c) Pas encore arrivé à la fin du mois : entrée postérieure.
-      if (c.dateEntree && estPosterieurAuMois(c.dateEntree, m.annee, m.mois)) continue
+      if (!estActifCeMois(c, m.annee, m.mois)) continue
       result.push({ mois: cle, consultant: c.nom, type: "absent_de_saisie" })
     }
   }
   return result
+}
+
+// Un consultant fait-il partie de l'effectif suivi pour un mois donné ?
+// Règle unique, partagée par la détection d'incohérences (ci-dessus) et par la
+// reconstruction du roster mensuel côté supabase-fetchers. Le Référentiel — et
+// non la matrice de présence — est la source de vérité de « qui est actif ».
+//   (a) role 'interne' (ex. fondateur Jérémie Kieffer) : jamais dans l'effectif.
+//   (b) sorti avant le début du mois : déjà parti.
+//   (c) entré après la fin du mois : pas encore arrivé.
+export function estActifCeMois(
+  consultant: Consultant,
+  annee: number,
+  mois: number,
+): boolean {
+  if (consultant.role === "interne") return false
+  if (
+    consultant.dateSortie &&
+    estAnterieurAuMois(consultant.dateSortie, annee, mois)
+  ) {
+    return false
+  }
+  if (
+    consultant.dateEntree &&
+    estPosterieurAuMois(consultant.dateEntree, annee, mois)
+  ) {
+    return false
+  }
+  return true
 }
 
 function estPosterieurAuMois(d: Date, annee: number, mois: number): boolean {

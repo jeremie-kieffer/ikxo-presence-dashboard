@@ -35,3 +35,4 @@ dist-ssr
 
 # CSV bruts feedback formation (données sensibles, source de vérité = xlsx)
 imports_feedbacks/*.csv
+.env

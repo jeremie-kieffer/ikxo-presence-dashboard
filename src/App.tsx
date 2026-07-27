@@ -3,7 +3,7 @@ import { Sidebar, type Module } from "./components/Sidebar"
 import { FormationView } from "./components/views/FormationView"
 import { MonthView } from "./components/views/MonthView"
 import { QuarterView } from "./components/views/QuarterView"
-import { chargerFichier } from "./lib/excel-parser"
+import { chargerDonnees } from "./lib/data-source"
 import {
   clesDuTrimestre,
   detecterIncoherences,
@@ -34,7 +34,7 @@ function App() {
   const [vue, setVue] = useState<Vue>("mensuelle")
 
   useEffect(() => {
-    chargerFichier()
+    chargerDonnees()
       .then((d) => {
         setData(d)
         if (d.cles.length > 0) {
