@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { AuthDebug } from "./components/AuthDebug"
 import { Sidebar, type Module } from "./components/Sidebar"
 import { FormationView } from "./components/views/FormationView"
 import { MonthView } from "./components/views/MonthView"
@@ -83,6 +84,7 @@ function App() {
         dateMiseAJour={data.dateMiseAJour}
       />
       <main className="px-6 py-6">
+        <AuthDebug />
         <header className="mb-6">
           <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">
             {titres.titre}
