@@ -36,6 +36,8 @@ En **dev** : fichier `.env` à la racine (gitignoré). En **prod** : variables d
 
 Le fichier `tests/fixtures/suivi_presence_consultants.xlsx` est une **fixture historique** : plus servie en prod (déplacée hors de `public/` à la substep 4.6), elle alimente les tests Vitest qui valident les calculateurs KPI et feedback contre des valeurs de référence connues. `src/lib/excel-parser.ts` (+ la dépendance `xlsx`) sont conservés **uniquement** pour lire cette fixture dans : `excel-parser.test.ts`, `kpi-calculators.test.ts`, `kpi-feedback.test.ts`, `parser-feedback.test.ts`.
 
+**Convention** : les assertions de ces tests sont une **photo de la vérité métier** à la date de la fixture ; elles sont mises à jour à chaque évolution majeure de la fixture (leur rôle est de détecter les régressions futures, pas de figer un passé). Dernière mise à jour : **28 juillet 2026** (+16 feedbacks → 63, +2 sessions → 20, +1 mois de saisie `2026-07`).
+
 ## Dette technique
 
 - **`created_at` manquant sur 4 tables** (`sessions_formation`, `feedbacks_formation`, `participations_formation`, `evenements`) : à ajouter (**substep 4.7**) avant la mini-UI de saisie (substep 5), pour que la date de fraîcheur reflète tous les changements.

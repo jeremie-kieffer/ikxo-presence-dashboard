@@ -18,35 +18,37 @@ const arrayBuffer = buf.buffer.slice(
 ) as ArrayBuffer
 const data = parserBuffer(arrayBuffer)
 
+// Valeurs de référence à la date de la fixture
+// tests/fixtures/suivi_presence_consultants.xlsx (28 juillet 2026).
 describe("computeFeedbackKPIs : globaux", () => {
   const kpi = computeFeedbackKPIs(
     data.feedbacksFormation,
     data.participationsFormations,
   )
 
-  it("nbFeedbacksTotal = 47", () => {
-    expect(kpi.nbFeedbacksTotal).toBe(47)
+  it("nbFeedbacksTotal = 63", () => {
+    expect(kpi.nbFeedbacksTotal).toBe(63)
   })
 
-  it("nbSessionsAvecFeedback = 7", () => {
-    expect(kpi.nbSessionsAvecFeedback).toBe(7)
+  it("nbSessionsAvecFeedback = 9", () => {
+    expect(kpi.nbSessionsAvecFeedback).toBe(9)
   })
 
-  it("noteMoyenneGlobale ≈ 4.40 (somme/47)", () => {
-    expect(kpi.noteMoyenneGlobale).toBeCloseTo(4.4043, 2)
+  it("noteMoyenneGlobale ≈ 4.52 (somme/63)", () => {
+    expect(kpi.noteMoyenneGlobale).toBeCloseTo(4.5238, 2)
   })
 
-  it("distribApplication : 25 + 14 + 5 + 3 = 47", () => {
+  it("distribApplication : 35 + 16 + 8 + 4 = 63", () => {
     const d = kpi.distribApplication
-    expect(d["Oui immédiatement"]).toBe(25)
-    expect(d["Oui mais j'ai besoin de plus de pratique"]).toBe(14)
-    expect(d["Pas sûr"]).toBe(5)
-    expect(d["Non"]).toBe(3)
-    expect(Object.values(d).reduce((a, b) => a + b, 0)).toBe(47)
+    expect(d["Oui immédiatement"]).toBe(35)
+    expect(d["Oui mais j'ai besoin de plus de pratique"]).toBe(16)
+    expect(d["Pas sûr"]).toBe(8)
+    expect(d["Non"]).toBe(4)
+    expect(Object.values(d).reduce((a, b) => a + b, 0)).toBe(63)
   })
 
-  it("tauxRetourMoyen ≈ 0.79 (moyenne pondérée par session)", () => {
-    expect(kpi.tauxRetourMoyen).toBeCloseTo(0.7925, 2)
+  it("tauxRetourMoyen ≈ 0.78 (moyenne pondérée par session)", () => {
+    expect(kpi.tauxRetourMoyen).toBeCloseTo(0.7812, 2)
   })
 
   it("vide en l'absence de feedbacks", () => {
@@ -130,11 +132,11 @@ describe("noteMoyenneParFormateur", () => {
     expect(j!.nbSessionsAvecFeedback).toBe(1)
   })
 
-  it("Théo Esposito : 2 sessions avec feedback", () => {
+  it("Théo Esposito : 3 sessions avec feedback", () => {
     const t = notes.get("Théo Esposito")
     expect(t).toBeDefined()
-    expect(t!.nbSessionsAvecFeedback).toBe(2)
-    expect(t!.note).toBeCloseTo(4.211, 2)
+    expect(t!.nbSessionsAvecFeedback).toBe(3)
+    expect(t!.note).toBeCloseTo(4.4265, 2)
   })
 
   it("Florian Le Fur n'apparaît pas (sessions sans feedback)", () => {

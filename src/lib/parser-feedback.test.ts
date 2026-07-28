@@ -12,14 +12,16 @@ const arrayBuffer = buf.buffer.slice(
 ) as ArrayBuffer
 const data = parserBuffer(arrayBuffer)
 
+// Valeurs de référence à la date de la fixture
+// tests/fixtures/suivi_presence_consultants.xlsx (28 juillet 2026).
 describe("parser feedback formation : structure générale", () => {
-  it("charge 47 feedbacks au total", () => {
-    expect(data.feedbacksFormation).toHaveLength(47)
+  it("charge 63 feedbacks au total", () => {
+    expect(data.feedbacksFormation).toHaveLength(63)
   })
 
-  it("couvre 7 sessions distinctes", () => {
+  it("couvre 9 sessions distinctes", () => {
     const ids = new Set(data.feedbacksFormation.map((f) => f.idSession))
-    expect(ids.size).toBe(7)
+    expect(ids.size).toBe(9)
     expect([...ids].sort()).toEqual([
       "F-2026-003",
       "F-2026-004",
@@ -28,6 +30,8 @@ describe("parser feedback formation : structure générale", () => {
       "F-2026-007",
       "F-2026-008",
       "F-2026-009",
+      "F-2026-010",
+      "F-2026-011",
     ])
   })
 

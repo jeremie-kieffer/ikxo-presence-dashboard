@@ -40,6 +40,9 @@ const arrayBuffer = buf.buffer.slice(
 ) as ArrayBuffer
 const data = parserBuffer(arrayBuffer)
 
+// Valeurs de référence figées à la date de la fixture
+// tests/fixtures/suivi_presence_consultants.xlsx (28 juillet 2026).
+
 const d = (jour: number) => new Date(2026, 3, jour, 12) // helper avril
 const mkJour = (valeur: PresenceJour["valeur"]): PresenceJour => ({
   date: d(1),
@@ -455,15 +458,16 @@ describe("vue trimestrielle : KPI", () => {
     expect(alertes).not.toContain("Julien Calvao")
   })
 
-  it("evolutionTauxAtteinte renvoie 5 points dans l'ordre chronologique", () => {
+  it("evolutionTauxAtteinte renvoie 6 points dans l'ordre chronologique", () => {
     const evo = evolutionTauxAtteinte(data)
-    expect(evo).toHaveLength(5)
+    expect(evo).toHaveLength(6)
     expect(evo.map((e) => e.cle)).toEqual([
       "2026-02",
       "2026-03",
       "2026-04",
       "2026-05",
       "2026-06",
+      "2026-07",
     ])
   })
 })
@@ -474,20 +478,20 @@ describe("formations — computeFormationKPIs (fenêtre globale)", () => {
     data.participationsFormations,
   )
 
-  it("nbSessions = 18 (catalogue complet)", () => {
-    expect(kpi.nbSessions).toBe(18)
+  it("nbSessions = 20 (catalogue complet)", () => {
+    expect(kpi.nbSessions).toBe(20)
   })
 
-  it("nbParticipantsUniques = 32 (consultants avec ≥1 P ou F)", () => {
-    expect(kpi.nbParticipantsUniques).toBe(32)
+  it("nbParticipantsUniques = 34 (consultants avec ≥1 P ou F)", () => {
+    expect(kpi.nbParticipantsUniques).toBe(34)
   })
 
   it("top formateur : Jérémie Kieffer avec 8 animations", () => {
     expect(kpi.topFormateurs[0]).toEqual({ nom: "Jérémie Kieffer", nb: 8 })
   })
 
-  it("top participant : Laureline Berthou avec 10 participations", () => {
-    expect(kpi.topParticipants[0]).toEqual({ nom: "Laureline Berthou", nb: 10 })
+  it("top participant : Laureline Berthou avec 11 participations", () => {
+    expect(kpi.topParticipants[0]).toEqual({ nom: "Laureline Berthou", nb: 11 })
   })
 
   it("topFormateurs et topParticipants sont triés desc et limités à 5", () => {
@@ -505,31 +509,31 @@ describe("formations — computeFormationKPIs (fenêtre globale)", () => {
     }
   })
 
-  it("parConsultant : Jérémie Kieffer = 7 participations + 8 animations", () => {
+  it("parConsultant : Jérémie Kieffer = 8 participations + 8 animations", () => {
     const j = kpi.parConsultant.find((c) => c.nom === "Jérémie Kieffer")
     expect(j).toEqual({
       nom: "Jérémie Kieffer",
-      participations: 7,
+      participations: 8,
       animations: 8,
     })
   })
 })
 
 describe("formations — filtrage temporel", () => {
-  it("filtrerSessions sur 2026 retient 9 sessions (F-2026-001 → F-2026-009)", () => {
+  it("filtrerSessions sur 2026 retient 11 sessions (F-2026-001 → F-2026-011)", () => {
     const debut2026 = new Date(2026, 0, 1)
     const sessions2026 = filtrerSessions(data.formations, debut2026)
-    expect(sessions2026).toHaveLength(9)
+    expect(sessions2026).toHaveLength(11)
     expect(sessions2026.every((s) => s.idSession.startsWith("F-2026"))).toBe(
       true,
     )
   })
 
-  it("computeFormationKPIs sur 2026 : nbSessions = 9", () => {
+  it("computeFormationKPIs sur 2026 : nbSessions = 11", () => {
     const debut2026 = new Date(2026, 0, 1)
     const sessions2026 = filtrerSessions(data.formations, debut2026)
     const kpi = computeFormationKPIs(sessions2026, data.participationsFormations)
-    expect(kpi.nbSessions).toBe(9)
+    expect(kpi.nbSessions).toBe(11)
     const totalP = kpi.parConsultant.reduce((a, c) => a + c.participations, 0)
     const totalF = kpi.parConsultant.reduce((a, c) => a + c.animations, 0)
     expect(totalP + totalF).toBeGreaterThan(0)

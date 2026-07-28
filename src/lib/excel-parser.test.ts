@@ -13,6 +13,8 @@ const arrayBuffer = buf.buffer.slice(
 
 const data = parserBuffer(arrayBuffer)
 
+// Valeurs de référence à la date de la fixture
+// tests/fixtures/suivi_presence_consultants.xlsx (28 juillet 2026).
 describe("excel-parser : structure générale", () => {
   it("charge 34 consultants au référentiel (26 actifs + 6 ex + Jérémie interne + Agnes Bregeon)", () => {
     expect(data.consultants).toHaveLength(34)
@@ -31,20 +33,29 @@ describe("excel-parser : structure générale", () => {
     expect(anita?.dateSortie?.getMonth()).toBe(0) // janvier (0-indexé)
   })
 
-  it("détecte les 5 onglets de saisie disponibles", () => {
+  it("détecte les 6 onglets de saisie disponibles", () => {
     expect(data.cles).toEqual([
       "2026-02",
       "2026-03",
       "2026-04",
       "2026-05",
       "2026-06",
+      "2026-07",
     ])
   })
 
-  it("extrait 3 événements globaux", () => {
-    expect(data.evenements).toHaveLength(3)
+  it("extrait 7 événements globaux", () => {
+    expect(data.evenements).toHaveLength(7)
     const types = data.evenements.map((e) => e.type).sort()
-    expect(types).toEqual(["XO Day", "XO Day", "XO Product Day"])
+    expect(types).toEqual([
+      "XO Day",
+      "XO Day",
+      "XO Day",
+      "XO Day",
+      "XO Product Day",
+      "XO Product Day",
+      "XO Product Day",
+    ])
   })
 })
 
@@ -135,8 +146,8 @@ describe("excel-parser : février 2026", () => {
 })
 
 describe("excel-parser : Formations (catalogue)", () => {
-  it("charge 18 sessions historiques", () => {
-    expect(data.formations).toHaveLength(18)
+  it("charge 20 sessions historiques", () => {
+    expect(data.formations).toHaveLength(20)
   })
 
   it("première session = F-2025-001 (Jérémie Kieffer, mars 2025)", () => {
@@ -147,12 +158,12 @@ describe("excel-parser : Formations (catalogue)", () => {
     expect(f.date.getMonth() + 1).toBe(3)
   })
 
-  it("dernière session = F-2026-009 (Simon Kerhyuel, mai 2026)", () => {
+  it("dernière session = F-2026-011 (Matthieu Le Corre, juillet 2026)", () => {
     const f = data.formations[data.formations.length - 1]
-    expect(f.idSession).toBe("F-2026-009")
-    expect(f.formateurs).toEqual(["Simon Kerhyuel"])
+    expect(f.idSession).toBe("F-2026-011")
+    expect(f.formateurs).toEqual(["Matthieu Le Corre"])
     expect(f.date.getFullYear()).toBe(2026)
-    expect(f.date.getMonth() + 1).toBe(5)
+    expect(f.date.getMonth() + 1).toBe(7)
   })
 
   it("toutes les sessions ont une date valide et au moins un formateur", () => {
@@ -173,19 +184,19 @@ describe("excel-parser : Formations (catalogue)", () => {
 })
 
 describe("excel-parser : Formations_Participations (matrice)", () => {
-  it("Laureline Berthou : 10 'P', 0 'F'", () => {
+  it("Laureline Berthou : 11 'P', 0 'F'", () => {
     const p = data.participationsFormations.get("Laureline Berthou")
     expect(p).toBeDefined()
     const codes = [...p!.values()]
-    expect(codes.filter((c) => c === "P")).toHaveLength(10)
+    expect(codes.filter((c) => c === "P")).toHaveLength(11)
     expect(codes.filter((c) => c === "F")).toHaveLength(0)
   })
 
-  it("Jérémie Kieffer : 7 'P' + 8 'F' (= 15 total, formule du Total Excel)", () => {
+  it("Jérémie Kieffer : 8 'P' + 8 'F' (= 16 total, formule du Total Excel)", () => {
     const p = data.participationsFormations.get("Jérémie Kieffer")
     expect(p).toBeDefined()
     const codes = [...p!.values()]
-    expect(codes.filter((c) => c === "P")).toHaveLength(7)
+    expect(codes.filter((c) => c === "P")).toHaveLength(8)
     expect(codes.filter((c) => c === "F")).toHaveLength(8)
   })
 
