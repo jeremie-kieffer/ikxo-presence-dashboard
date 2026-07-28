@@ -336,12 +336,19 @@ function construireParticipations(
 
 // === Fraîcheur des données ===
 
-// Tables portant une colonne `created_at` (TIMESTAMPTZ DEFAULT now()). Vérifié
-// via l'API REST : le schéma actuel ne l'a QUE sur ces deux tables. Les 4 autres
-// tables métier (participations_formation, sessions_formation,
-// feedbacks_formation, evenements) n'ont pas encore ce champ — les interroger
-// renverrait un 400. Il suffira de les ajouter ici le jour où la colonne existe.
-const TABLES_AVEC_CREATED_AT = ["consultants", "presences"] as const
+// Tables portant une colonne `created_at` (TIMESTAMPTZ NOT NULL DEFAULT now()).
+// Depuis la substep 4.7, les 6 tables métier en disposent : les 4 dernières ont
+// été alimentées par un ALTER + backfill le 28 juillet 2026 (timestamp uniforme
+// pour l'historique). La fraîcheur reflète donc désormais un changement sur
+// n'importe laquelle de ces tables (sur INSERT — voir la limite plus bas).
+const TABLES_AVEC_CREATED_AT = [
+  "consultants",
+  "presences",
+  "sessions_formation",
+  "feedbacks_formation",
+  "participations_formation",
+  "evenements",
+] as const
 
 /**
  * Date du changement le plus récent en base = max(`created_at`) sur les tables

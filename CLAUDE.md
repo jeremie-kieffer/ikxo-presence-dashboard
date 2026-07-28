@@ -22,7 +22,7 @@ Aujourd'hui le suivi se fait dans un fichier Excel maintenu manuellement par le 
 
 > **Historique** : jusqu'à l'Étape 4, le dashboard parsait le xlsx embarqué côté navigateur (pas de backend). Depuis, la source de vérité runtime est **Supabase** ; le xlsx n'est plus servi en prod (sorti de `public/` à la substep 4.6). Le paragraphe ci-dessous et la table des onglets décrivent le **format source Excel**, qui reste la porte d'entrée de la migration ponctuelle.
 
-**Date de dernière mise à jour des données** (affichée dans la sidebar sous « Dashboard IKXO ») : depuis l'Étape 4.5, c'est le **`max(created_at)`** des tables Supabase, calculé par `dernierChangement()` dans `supabase-fetchers.ts` et exposé en `DashboardData.dateMiseAJour`. **Limite actuelle** : seules `consultants` et `presences` portent une colonne `created_at` ; la date reflète donc leur dernière insertion (aujourd'hui : la migration initiale du 04/06/2026) et **n'avance pas** encore sur un changement de formations / feedbacks / événements, ni sur un UPDATE in-place (voir « Dette technique »). L'ancien mécanisme `__DATE_MISE_A_JOUR__` injecté au build (Vite `define`) n'alimente plus cette date ; il reste utilisé uniquement par la fixture de test.
+**Date de dernière mise à jour des données** (affichée dans la sidebar sous « Dashboard IKXO ») : depuis l'Étape 4.5, c'est le **`max(created_at)`** des tables Supabase, calculé par `dernierChangement()` dans `supabase-fetchers.ts` et exposé en `DashboardData.dateMiseAJour`. Depuis la substep 4.7, les **6 tables métier** portent `created_at`, donc la date reflète un changement sur n'importe laquelle d'entre elles. **Limite restante** : `created_at` ne bouge que sur un INSERT (pas sur un UPDATE in-place — voir « Dette technique »). L'ancien mécanisme `__DATE_MISE_A_JOUR__` injecté au build (Vite `define`) n'alimente plus cette date ; il reste utilisé uniquement par la fixture de test.
 
 ## Variables d'environnement
 
@@ -40,7 +40,7 @@ Le fichier `tests/fixtures/suivi_presence_consultants.xlsx` est une **fixture hi
 
 ## Dette technique
 
-- **`created_at` manquant sur 4 tables** (`sessions_formation`, `feedbacks_formation`, `participations_formation`, `evenements`) : à ajouter (**substep 4.7**) avant la mini-UI de saisie (substep 5), pour que la date de fraîcheur reflète tous les changements.
+- ~~`created_at` manquant sur 4 tables~~ **réglé (substep 4.7)** : `created_at` (TIMESTAMPTZ NOT NULL DEFAULT now()) est désormais présent sur les **6 tables métier** ; les 4 dernières (`sessions_formation`, `feedbacks_formation`, `participations_formation`, `evenements`) ont été backfillées au 28 juillet 2026. `dernierChangement()` interroge les 6 tables.
 - **`updated_at` + triggers** : `created_at` ne bouge pas sur un UPDATE. Pour une vraie fraîcheur (édition in-place), prévoir une colonne `updated_at` alimentée par trigger — chantier DB séparé.
 
 ## Source de données
