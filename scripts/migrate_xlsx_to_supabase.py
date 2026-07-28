@@ -38,7 +38,7 @@ if not SUPABASE_URL or not SUPABASE_KEY:
     )
 
 REPO_ROOT = Path(__file__).parent.parent
-XLSX_PATH = REPO_ROOT / 'public' / 'data' / 'suivi_presence_consultants.xlsx'
+XLSX_PATH = REPO_ROOT / 'tests' / 'fixtures' / 'suivi_presence_consultants.xlsx'
 
 if not XLSX_PATH.exists():
     raise SystemExit(f"⛔ Fichier xlsx introuvable : {XLSX_PATH}")
