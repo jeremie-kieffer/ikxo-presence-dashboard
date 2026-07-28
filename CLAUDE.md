@@ -264,6 +264,8 @@ ikxo-presence-dashboard/
 
 Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur les mois disponibles :
 
+> **Convention** : les valeurs de cette section sont mises à jour lors de chaque évolution majeure de la fixture. **Source de vérité exécutable : la suite `npm test`** (`tests/fixtures/suivi_presence_consultants.xlsx`). Dernière synchronisation : **28 juillet 2026**.
+
 ### Section Présence
 
 | Mois | Actifs | Présences totales (1 + IC) | dont 1 (hors IC) | Atteinte | Moyenne | Pic |
@@ -280,23 +282,25 @@ Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur le
 
 | KPI | Valeur attendue |
 |---|---|
-| Nb sessions | 18 |
-| Nb participants uniques | 32 |
+| Nb sessions | 20 |
+| Nb participants uniques | 34 |
 | Top formateur | Jérémie Kieffer (8 animations) |
-| Top participant | Laureline Berthou (10 participations) |
-| Jérémie Kieffer (référentiel) | 7 P + 8 F = 15 (cohérent avec la formule Total Excel) |
+| Top participant | Laureline Berthou (11 participations) |
+| Jérémie Kieffer (référentiel) | 8 P + 8 F = 16 (cohérent avec la formule Total Excel) |
+| Dernière session | F-2026-011 (Matthieu Le Corre, juillet 2026) |
 
 ### Section Feedback Formation
 
-| KPI | Valeur attendue (commit HEAD) |
+| KPI | Valeur attendue (fixture au 28/07/2026) |
 |---|---|
-| Nb feedbacks total | 47 |
-| Nb sessions avec feedback | 7 (F-2026-003 → F-2026-009) |
-| Note moyenne globale | ≈ 4,40 / 5 |
-| Taux de retour moyen | ≈ 79 % |
-| Distribution application | « Oui immédiatement » 25, « Oui mais besoin pratique » 14, « Pas sûr » 5, « Non » 3 |
-| F-2026-009 (session la plus faible) | 5 retours / 9 participants, note 3,60 |
-| F-2026-006 (session la mieux notée) | 7 retours / 5 participants (taux > 100 %), note 4,86 |
+| Nb feedbacks total | 63 |
+| Nb sessions avec feedback | 9 (F-2026-003 → F-2026-011) |
+| Note moyenne globale | ≈ 4,52 / 5 |
+| Taux de retour moyen | ≈ 78 % |
+| Distribution application | « Oui immédiatement » 35, « Oui mais besoin pratique » 16, « Pas sûr » 8, « Non » 4 |
+| Théo Esposito (formateur) | 3 sessions avec feedback, note ≈ 4,43 |
+| F-2026-009 (5 retours / 9 participants) | note 3,60 |
+| F-2026-006 (7 retours / 5 participants, taux > 100 %) | note 4,86 |
 
 **Cas particuliers à valider** :
 - Zelal Aslan : marquée `M` en fév-mars (congé mat), `IC` en avril (11 IC). Doit être exclue du calcul fév-mars, comptée comme atteinte en avril.
