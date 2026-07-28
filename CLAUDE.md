@@ -268,15 +268,7 @@ Pour vérifier que les calculs sont corrects, voici les valeurs attendues sur le
 
 ### Section Présence
 
-| Mois | Actifs | Présences totales (1 + IC) | dont 1 (hors IC) | Atteinte | Moyenne | Pic |
-|---|---|---|---|---|---|---|
-| Févr. 2026 | 24 | 73 | 62 | 63% | 3,04 j | 19/02 (15) — XO Product Day |
-| Mars 2026 | 25 | 72 | 60 | 60% | 2,88 j | 26/03 (17) — XO Day |
-| Avril 2026 | 26 | **82** | **56** | **85%** | **3,15 j** | 23/04 (24) — XO Day |
-| Mai 2026 | 26 | 81 | 46 | 54% | 3,12 j | 28/05 (21) |
-| Juin 2026 | 27 | 3 | 2 | 0% | 0,11 j | 1/06 (3) — mois en cours |
-
-> **Note** : ces valeurs sont arrêtées à la donnée du commit HEAD au moment où ce tableau a été écrit. Elles évolueront à chaque mise à jour mensuelle du fichier source. Avril 2026 a été enrichi au commit `1b1023d` (refonte ergonomique) : avant cette refonte, les chiffres étaient ~69 présences totales / 77% / 2,7 j.
+Les valeurs de référence des KPI mensuels de présence (taux d'atteinte OKR, nb de consultants actifs, venus ≥1 fois, pic du mois) sont **ancrées dans `src/lib/kpi-presence.test.ts`**, bloc `Baseline KPI mensuels de présence` (un jeu de valeurs par mois de la fixture). **Source de vérité exécutable : `npm test`.** La table détaillée figée précédemment ici a été retirée car elle dérivait silencieusement à chaque mise à jour mensuelle du fichier ; la baseline de test échoue désormais si un KPI mensuel change sans mise à jour explicite.
 
 ### Section Formation (catalogue complet)
 
