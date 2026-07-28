@@ -334,6 +334,46 @@ function construireParticipations(
   return { participationsFormations, formateursParSession }
 }
 
+// === Fraîcheur des données ===
+
+// Tables portant une colonne `created_at` (TIMESTAMPTZ DEFAULT now()). Vérifié
+// via l'API REST : le schéma actuel ne l'a QUE sur ces deux tables. Les 4 autres
+// tables métier (participations_formation, sessions_formation,
+// feedbacks_formation, evenements) n'ont pas encore ce champ — les interroger
+// renverrait un 400. Il suffira de les ajouter ici le jour où la colonne existe.
+const TABLES_AVEC_CREATED_AT = ["consultants", "presences"] as const
+
+/**
+ * Date du changement le plus récent en base = max(`created_at`) sur les tables
+ * qui portent cette colonne. Requêtes en parallèle, tolérantes : une table en
+ * erreur (colonne absente, réseau) est simplement ignorée plutôt que de faire
+ * échouer tout le chargement. Retourne null si aucune donnée exploitable.
+ *
+ * Limite connue : `created_at` ne bouge pas sur un UPDATE in-place. La date
+ * n'avancera donc que sur un INSERT (ex. nouvelle saisie via la future mini-UI).
+ * Un `updated_at` sera ajouté plus tard si nécessaire (chantier DB séparé).
+ */
+async function dernierChangement(): Promise<Date | null> {
+  const dates = await Promise.all(
+    TABLES_AVEC_CREATED_AT.map(async (table) => {
+      const { data, error } = await supabase
+        .from(table)
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+      if (error || !data || data.length === 0) return null
+      const iso = (data[0] as { created_at: string | null }).created_at
+      return iso ? new Date(iso) : null
+    }),
+  )
+
+  let max: Date | null = null
+  for (const d of dates) {
+    if (d && (max === null || d.getTime() > max.getTime())) max = d
+  }
+  return max
+}
+
 // === Fonction publique principale ===
 
 export async function fetchDashboardData(): Promise<DashboardData> {
@@ -344,6 +384,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     presences,
     participations,
     feedbacksFormation,
+    dateChangement,
   ] = await Promise.all([
     fetchConsultantsRaw(),
     fetchSessionsFormation(),
@@ -351,6 +392,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     fetchPresences(),
     fetchParticipations(),
     fetchFeedbacks(),
+    dernierChangement(),
   ])
 
   const consultants = consultantsRaw.map(mapConsultant)
@@ -371,8 +413,9 @@ export async function fetchDashboardData(): Promise<DashboardData> {
   }))
 
   return {
-    // Source live : la fraîcheur des données = instant du fetch.
-    dateMiseAJour: new Date(),
+    // Fraîcheur = date du dernier created_at en base ; fallback sur l'instant
+    // du fetch si la base est vide (aucun created_at exploitable).
+    dateMiseAJour: dateChangement ?? new Date(),
     consultants,
     evenements,
     mois,

@@ -189,18 +189,16 @@ function AucunMois() {
       </h1>
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-slate-700">
         <p className="mb-2">
-          Le fichier Excel a bien été chargé, mais il ne contient aucun onglet
-          au format <code className="rounded bg-white px-1.5 py-0.5 text-xs">
-            Saisie YYYY-MM
-          </code>.
+          La connexion à Supabase a réussi, mais aucune présence n'est encore
+          enregistrée en base.
         </p>
         <p>
-          Ajoutez au moins un onglet (ex.{" "}
+          Ajoutez des présences dans la table{" "}
           <code className="rounded bg-white px-1.5 py-0.5 text-xs">
-            Saisie 2026-04
-          </code>
-          ) avec en ligne 3 les en-têtes « Consultant » + dates ouvrées + «
-          Total » + « Statut OKR ».
+            presences
+          </code>{" "}
+          (une ligne par présence, avec sa date) pour voir apparaître les mois
+          de suivi.
         </p>
       </div>
     </main>
@@ -216,34 +214,9 @@ function ErreurChargement({ message }: { message: string }) {
       <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-slate-700">
         <p className="font-medium text-red-800">{message}</p>
         <p>
-          Le fichier attendu doit se trouver à :{" "}
-          <code className="rounded bg-white px-1.5 py-0.5 text-xs">
-            public/data/suivi_presence_consultants.xlsx
-          </code>
+          Impossible de charger les données depuis Supabase. Vérifie ta
+          connexion réseau et réessaie.
         </p>
-        <p>Il doit contenir les onglets suivants :</p>
-        <ul className="list-disc space-y-1 pl-6">
-          <li>
-            <code className="rounded bg-white px-1.5 py-0.5 text-xs">
-              Référentiel
-            </code>{" "}
-            : col A = nom, col B = date d'entrée, col C = date de sortie
-          </li>
-          <li>
-            <code className="rounded bg-white px-1.5 py-0.5 text-xs">
-              Événements
-            </code>{" "}
-            : col A = date, col B = type, col C = libellé
-          </li>
-          <li>
-            <code className="rounded bg-white px-1.5 py-0.5 text-xs">
-              Saisie YYYY-MM
-            </code>{" "}
-            : un onglet par mois (ex. <code>Saisie 2026-04</code>) avec en
-            ligne 3 les en-têtes « Consultant » + dates ouvrées + « Total » +
-            « Statut OKR »
-          </li>
-        </ul>
       </div>
     </main>
   )

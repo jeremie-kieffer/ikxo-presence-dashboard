@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { chargerFichier, parserBuffer } from "./excel-parser"
 
 const buf = readFileSync(
-  resolve(__dirname, "../../public/data/suivi_presence_consultants.xlsx"),
+  resolve(__dirname, "../../tests/fixtures/suivi_presence_consultants.xlsx"),
 )
 const arrayBuffer = buf.buffer.slice(
   buf.byteOffset,

@@ -16,14 +16,30 @@ Aujourd'hui le suivi se fait dans un fichier Excel maintenu manuellement par le 
 - **Framework** : Vite + React + TypeScript (rapide à initialiser, facile à maintenir, bonne expérience dev)
 - **Styling** : Tailwind CSS (productivité maximale, design cohérent sans CSS custom)
 - **Charts** : Recharts (simple, bien intégré React, suffisant pour les besoins)
-- **Lecture Excel** : SheetJS (`xlsx` package, lecture côté client du fichier .xlsx)
-- **Hébergement** : Vercel ou Netlify (déploiement gratuit, lien partagé avec un mot de passe basique)
+- **Source de données (runtime)** : Supabase (Postgres managé, projet `noyaatbqkivzqxiwoded`). Le dashboard **requête Supabase** via `@supabase/supabase-js` (voir `src/lib/supabase-fetchers.ts` → `fetchDashboardData()`, exposé par `src/lib/data-source.ts`).
+- **Lecture Excel** : SheetJS (`xlsx` package) — **plus utilisé au runtime** depuis l'Étape 4. Conservé uniquement pour le script de migration (`scripts/migrate_xlsx_to_supabase.py`, côté Python via openpyxl) et comme lecteur de la fixture de test (`src/lib/excel-parser.ts`).
+- **Hébergement** : Cloudflare Pages (redéploiement à chaque push sur `main`).
 
-Pas de backend, pas de base de données. Tout est statique. L'utilisateur uploade le fichier Excel dans le navigateur, ou bien le fichier est versionné dans le repo et déployé avec.
+> **Historique** : jusqu'à l'Étape 4, le dashboard parsait le xlsx embarqué côté navigateur (pas de backend). Depuis, la source de vérité runtime est **Supabase** ; le xlsx n'est plus servi en prod (sorti de `public/` à la substep 4.6). Le paragraphe ci-dessous et la table des onglets décrivent le **format source Excel**, qui reste la porte d'entrée de la migration ponctuelle.
 
-**À discuter avec Claude Code** : le mode "upload manuel" vs "fichier embarqué dans le repo". Recommandation : fichier embarqué = plus simple, pas de friction à chaque consultation, mais nécessite un redéploiement à chaque mise à jour mensuelle (1 commande, automatisable).
+**Date de dernière mise à jour des données** (affichée dans la sidebar sous « Dashboard IKXO ») : depuis l'Étape 4.5, c'est le **`max(created_at)`** des tables Supabase, calculé par `dernierChangement()` dans `supabase-fetchers.ts` et exposé en `DashboardData.dateMiseAJour`. **Limite actuelle** : seules `consultants` et `presences` portent une colonne `created_at` ; la date reflète donc leur dernière insertion (aujourd'hui : la migration initiale du 04/06/2026) et **n'avance pas** encore sur un changement de formations / feedbacks / événements, ni sur un UPDATE in-place (voir « Dette technique »). L'ancien mécanisme `__DATE_MISE_A_JOUR__` injecté au build (Vite `define`) n'alimente plus cette date ; il reste utilisé uniquement par la fixture de test.
 
-**Date de dernière mise à jour des données** (affichée dans la sidebar sous « Dashboard IKXO ») : injectée **au build** via le `define` Vite `__DATE_MISE_A_JOUR__` (`vite.config.ts`), exposée en `DashboardData.dateMiseAJour` par `chargerFichier`. Elle avance donc à chaque build = chaque push qui redéploie sur Cloudflare. On n'utilise **pas** le header HTTP `Last-Modified` : Cloudflare Pages ne le sert pas pour les fichiers statiques (seulement un `ETag`).
+## Variables d'environnement
+
+Le front lit deux variables (préfixe `VITE_` obligatoire pour être exposées au bundle) :
+- `VITE_SUPABASE_URL` — URL du projet Supabase
+- `VITE_SUPABASE_ANON_KEY` — clé *publishable* (anon), publique par nature, safe dans le bundle navigateur
+
+En **dev** : fichier `.env` à la racine (gitignoré). En **prod** : variables d'environnement Cloudflare Pages. La clé `service_role` (utilisée par le script de migration Python) ne doit **jamais** être exposée au front.
+
+## Tests et fixtures
+
+Le fichier `tests/fixtures/suivi_presence_consultants.xlsx` est une **fixture historique** : plus servie en prod (déplacée hors de `public/` à la substep 4.6), elle alimente les tests Vitest qui valident les calculateurs KPI et feedback contre des valeurs de référence connues. `src/lib/excel-parser.ts` (+ la dépendance `xlsx`) sont conservés **uniquement** pour lire cette fixture dans : `excel-parser.test.ts`, `kpi-calculators.test.ts`, `kpi-feedback.test.ts`, `parser-feedback.test.ts`.
+
+## Dette technique
+
+- **`created_at` manquant sur 4 tables** (`sessions_formation`, `feedbacks_formation`, `participations_formation`, `evenements`) : à ajouter (**substep 4.7**) avant la mini-UI de saisie (substep 5), pour que la date de fraîcheur reflète tous les changements.
+- **`updated_at` + triggers** : `created_at` ne bouge pas sur un UPDATE. Pour une vraie fraîcheur (édition in-place), prévoir une colonne `updated_at` alimentée par trigger — chantier DB séparé.
 
 ## Source de données
 
