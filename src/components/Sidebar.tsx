@@ -2,21 +2,51 @@
 // (Mensuelle/Trimestrielle/mois) restent dans le main pour distinguer
 // nav primaire et filtres contextuels.
 
+import { deconnecter } from "../lib/auth-helpers"
 import { libelleMiseAJour } from "../lib/format"
+import { useSession } from "../lib/use-session"
 
-export type Module = "presence" | "formation"
+export type Module =
+  | "presence"
+  | "formation"
+  | "saisie-presences"
+  | "sessions-formation"
+  | "consultants"
 
-type IconName = "calendar" | "school" | "sparkles" | "user"
+type IconName =
+  | "calendar"
+  | "school"
+  | "sparkles"
+  | "user"
+  | "edit"
+  | "users"
 
 const MODULES_ACTIFS: { id: Module; label: string; icon: IconName }[] = [
   { id: "presence", label: "Présence", icon: "calendar" },
   { id: "formation", label: "Formation", icon: "school" },
 ]
 
+// Vues réservées aux admins connectés (placeholders jusqu'aux substeps 5.3-5.5).
+const MODULES_ADMIN: { id: Module; label: string; icon: IconName }[] = [
+  { id: "saisie-presences", label: "Saisie présences", icon: "edit" },
+  { id: "sessions-formation", label: "Sessions formation", icon: "school" },
+  { id: "consultants", label: "Consultants", icon: "users" },
+]
+
 const MODULES_A_VENIR: { label: string; icon: IconName }[] = [
   { label: "Rituels", icon: "sparkles" },
   { label: "Vue consultant", icon: "user" },
 ]
+
+// Prénom affiché = 1re partie de l'email avant le point, capitalisée.
+// "jeremie.kieffer@ikxo.fr" -> "Jeremie". (Les accents ne sont pas
+// reconstituables depuis l'email : capitalisation simple, pas de sur-ingénierie.)
+function prenomDepuisEmail(email: string): string {
+  const local = email.split("@")[0] ?? ""
+  const prenom = local.split(".")[0] ?? ""
+  if (prenom === "") return email
+  return prenom.charAt(0).toUpperCase() + prenom.slice(1)
+}
 
 export function Sidebar({
   module,
@@ -27,6 +57,7 @@ export function Sidebar({
   onChange: (m: Module) => void
   dateMiseAJour?: Date | null
 }) {
+  const { user } = useSession()
   const libelleMaj = libelleMiseAJour(dateMiseAJour)
   return (
     <aside className="flex h-full flex-col bg-gray-50 [border-right:0.5px_solid_#e5e7eb]">
@@ -54,6 +85,28 @@ export function Sidebar({
           ))}
         </ul>
 
+        {user && (
+          <>
+            <div className="mt-8 px-3">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                Administration
+              </p>
+            </div>
+            <ul className="mt-2 space-y-0.5">
+              {MODULES_ADMIN.map((m) => (
+                <li key={m.id}>
+                  <SidebarItem
+                    icon={m.icon}
+                    label={m.label}
+                    active={module === m.id}
+                    onClick={() => onChange(m.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
         <div className="mt-8 px-3">
           <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
             À venir
@@ -67,6 +120,22 @@ export function Sidebar({
           ))}
         </ul>
       </nav>
+
+      {user && (
+        <div className="[border-top:0.5px_solid_#e5e7eb] px-5 py-4">
+          <p className="text-[11px] text-gray-500">Connecté en tant que</p>
+          <p className="text-sm font-medium text-ikxo-blue">
+            {prenomDepuisEmail(user.email ?? "")}
+          </p>
+          <button
+            type="button"
+            onClick={() => void deconnecter()}
+            className="mt-2 text-xs font-medium text-gray-500 underline-offset-2 hover:text-ikxo-blue hover:underline"
+          >
+            Se déconnecter
+          </button>
+        </div>
+      )}
     </aside>
   )
 }
@@ -159,6 +228,22 @@ function Icon({ name }: { name: IconName }) {
         <svg {...common}>
           <circle cx="12" cy="8" r="4" />
           <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+        </svg>
+      )
+    case "edit":
+      return (
+        <svg {...common}>
+          <path d="M4 20h4L18.5 9.5a2.12 2.12 0 0 0-3-3L5 17v3" />
+          <path d="M13.5 6.5l3 3" />
+        </svg>
+      )
+    case "users":
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" />
+          <path d="M16 4.5a3 3 0 0 1 0 6" />
+          <path d="M21 20v-1a4 4 0 0 0-3-3.85" />
         </svg>
       )
   }

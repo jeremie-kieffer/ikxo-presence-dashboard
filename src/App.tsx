@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
-import { AuthDebug } from "./components/AuthDebug"
+import { RequireAuth } from "./components/RequireAuth"
 import { Sidebar, type Module } from "./components/Sidebar"
 import { FormationView } from "./components/views/FormationView"
 import { MonthView } from "./components/views/MonthView"
 import { QuarterView } from "./components/views/QuarterView"
+import { VueConsultantsPlaceholder } from "./components/views/VueConsultantsPlaceholder"
+import { VueSaisiePresencesPlaceholder } from "./components/views/VueSaisiePresencesPlaceholder"
+import { VueSessionsFormationPlaceholder } from "./components/views/VueSessionsFormationPlaceholder"
 import { chargerDonnees } from "./lib/data-source"
 import {
   clesDuTrimestre,
@@ -15,7 +18,10 @@ import type { DashboardData, MoisKey } from "./lib/types"
 
 type Vue = "mensuelle" | "trimestre"
 
-const TITRES_MODULES: Record<Module, { titre: string; sousTitre: string }> = {
+const TITRES_MODULES: Record<
+  "presence" | "formation",
+  { titre: string; sousTitre: string }
+> = {
   presence: {
     titre: "Présence",
     sousTitre:
@@ -71,8 +77,6 @@ function App() {
     if (cles.length > 0) setMoisSelectionne(cles[cles.length - 1])
   }
 
-  const titres = TITRES_MODULES[module]
-
   return (
     <div
       className="grid min-h-full border-t-4 border-ikxo-blue"
@@ -84,56 +88,77 @@ function App() {
         dateMiseAJour={data.dateMiseAJour}
       />
       <main className="px-6 py-6">
-        <AuthDebug />
-        <header className="mb-6">
-          <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">
-            {titres.titre}
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">{titres.sousTitre}</p>
-        </header>
+        {module === "saisie-presences" && (
+          <RequireAuth>
+            <VueSaisiePresencesPlaceholder />
+          </RequireAuth>
+        )}
+        {module === "sessions-formation" && (
+          <RequireAuth>
+            <VueSessionsFormationPlaceholder />
+          </RequireAuth>
+        )}
+        {module === "consultants" && (
+          <RequireAuth>
+            <VueConsultantsPlaceholder />
+          </RequireAuth>
+        )}
 
-        {module === "presence" && (
-          <div className="mb-6 flex flex-wrap items-center gap-3">
-            <SelecteurVue vue={vue} onChange={setVue} />
-            {vue === "mensuelle" ? (
-              <select
-                value={moisSelectionne}
-                onChange={(e) => setMoisSelectionne(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-              >
-                {[...data.cles].reverse().map((cle) => (
-                  <option key={cle} value={cle}>
-                    {libelleMois(cle)}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <select
-                value={trimestreActuelStr}
-                onChange={(e) => handleChangerTrimestre(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-              >
-                {trimestresDisponibles.map((str) => (
-                  <option key={str} value={str}>
-                    {libelleTrimestre(str)}
-                  </option>
-                ))}
-              </select>
+        {(module === "presence" || module === "formation") && (
+          <>
+            <header className="mb-6">
+              <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">
+                {TITRES_MODULES[module].titre}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {TITRES_MODULES[module].sousTitre}
+              </p>
+            </header>
+
+            {module === "presence" && (
+              <div className="mb-6 flex flex-wrap items-center gap-3">
+                <SelecteurVue vue={vue} onChange={setVue} />
+                {vue === "mensuelle" ? (
+                  <select
+                    value={moisSelectionne}
+                    onChange={(e) => setMoisSelectionne(e.target.value)}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    {[...data.cles].reverse().map((cle) => (
+                      <option key={cle} value={cle}>
+                        {libelleMois(cle)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={trimestreActuelStr}
+                    onChange={(e) => handleChangerTrimestre(e.target.value)}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  >
+                    {trimestresDisponibles.map((str) => (
+                      <option key={str} value={str}>
+                        {libelleTrimestre(str)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             )}
-          </div>
-        )}
 
-        {module === "presence" && incoherences.length > 0 && (
-          <BandeauIncoherences incoherences={incoherences} />
-        )}
+            {module === "presence" && incoherences.length > 0 && (
+              <BandeauIncoherences incoherences={incoherences} />
+            )}
 
-        {module === "presence" && vue === "mensuelle" && (
-          <MonthView mois={mois} data={data} />
+            {module === "presence" && vue === "mensuelle" && (
+              <MonthView mois={mois} data={data} />
+            )}
+            {module === "presence" && vue === "trimestre" && (
+              <QuarterView mois={mois} data={data} />
+            )}
+            {module === "formation" && <FormationView data={data} />}
+          </>
         )}
-        {module === "presence" && vue === "trimestre" && (
-          <QuarterView mois={mois} data={data} />
-        )}
-        {module === "formation" && <FormationView data={data} />}
       </main>
     </div>
   )
