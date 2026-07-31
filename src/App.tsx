@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { LoginScreen } from "./components/LoginScreen"
 import { RequireAuth } from "./components/RequireAuth"
 import { Sidebar, type Module } from "./components/Sidebar"
 import { FormationView } from "./components/views/FormationView"
@@ -15,6 +16,7 @@ import {
   type Incoherence,
 } from "./lib/kpi-calculators"
 import type { DashboardData, MoisKey } from "./lib/types"
+import { useSession } from "./lib/use-session"
 
 type Vue = "mensuelle" | "trimestre"
 
@@ -39,6 +41,7 @@ function App() {
   const [moisSelectionne, setMoisSelectionne] = useState<MoisKey | null>(null)
   const [module, setModule] = useState<Module>("presence")
   const [vue, setVue] = useState<Vue>("mensuelle")
+  const { user } = useSession()
 
   useEffect(() => {
     chargerDonnees()
@@ -50,6 +53,12 @@ function App() {
       })
       .catch((e: Error) => setErreur(e.message))
   }, [])
+
+  // Après une connexion réussie depuis la vue login, on rebascule sur la vue
+  // par défaut (la sidebar affiche alors le bloc « Connecté en tant que »).
+  useEffect(() => {
+    if (module === "login" && user) setModule("presence")
+  }, [module, user])
 
   const trimestresDisponibles = useMemo(() => {
     if (!data) return []
@@ -88,6 +97,8 @@ function App() {
         dateMiseAJour={data.dateMiseAJour}
       />
       <main className="px-6 py-6">
+        {module === "login" && <LoginScreen />}
+
         {module === "saisie-presences" && (
           <RequireAuth>
             <VueSaisiePresences data={data} />

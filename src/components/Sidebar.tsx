@@ -12,6 +12,7 @@ export type Module =
   | "saisie-presences"
   | "sessions-formation"
   | "consultants"
+  | "login"
 
 type IconName =
   | "calendar"
@@ -20,6 +21,7 @@ type IconName =
   | "user"
   | "edit"
   | "users"
+  | "login"
 
 const MODULES_ACTIFS: { id: Module; label: string; icon: IconName }[] = [
   { id: "presence", label: "Présence", icon: "calendar" },
@@ -57,7 +59,7 @@ export function Sidebar({
   onChange: (m: Module) => void
   dateMiseAJour?: Date | null
 }) {
-  const { user } = useSession()
+  const { user, loading } = useSession()
   const libelleMaj = libelleMiseAJour(dateMiseAJour)
   return (
     <aside className="flex h-full flex-col bg-gray-50 [border-right:0.5px_solid_#e5e7eb]">
@@ -120,6 +122,17 @@ export function Sidebar({
           ))}
         </ul>
       </nav>
+
+      {!user && !loading && (
+        <div className="[border-top:0.5px_solid_#e5e7eb] p-2">
+          <SidebarItem
+            icon="login"
+            label="Se connecter"
+            active={module === "login"}
+            onClick={() => onChange("login")}
+          />
+        </div>
+      )}
 
       {user && (
         <div className="[border-top:0.5px_solid_#e5e7eb] px-5 py-4">
@@ -244,6 +257,13 @@ function Icon({ name }: { name: IconName }) {
           <path d="M3 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" />
           <path d="M16 4.5a3 3 0 0 1 0 6" />
           <path d="M21 20v-1a4 4 0 0 0-3-3.85" />
+        </svg>
+      )
+    case "login":
+      return (
+        <svg {...common}>
+          <path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2" />
+          <path d="M20 12H10M16 16l4-4-4-4" />
         </svg>
       )
   }
