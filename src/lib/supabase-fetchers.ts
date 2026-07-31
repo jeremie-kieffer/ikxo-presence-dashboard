@@ -31,13 +31,14 @@ import type {
   MoisData,
   MoisKey,
   ParticipationsFormation,
+  RoleConsultant,
   RoleFormation,
   SessionFormation,
 } from "./types"
 
 // === Types bruts (format long tel que stocké en base) ===
 
-type PresenceStatut = "present" | "intercontract" | "absence_longue"
+export type PresenceStatut = "present" | "intercontract" | "absence_longue"
 type ParticipationStatut = "formateur" | "present" | "inscrit"
 
 export interface PresenceRaw {
@@ -431,4 +432,59 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     participationsFormations,
     feedbacksFormation,
   }
+}
+
+// === Saisie des présences (substep 5.3) ===
+
+// Consultant avec son id DB : nécessaire pour écrire dans `presences`
+// (upsert/delete sur consultant_id). Le type React `Consultant` ne porte pas
+// l'id, d'où ce type dédié à l'UI d'administration.
+export interface ConsultantAvecId {
+  id: string
+  nom: string
+  dateEntree: Date | null
+  dateSortie: Date | null
+  role: RoleConsultant
+}
+
+export async function fetchConsultantsAvecId(): Promise<ConsultantAvecId[]> {
+  const rows = await fetchConsultantsRaw()
+  return rows.map((r) => ({
+    id: r.id,
+    nom: r.nom,
+    dateEntree: r.date_entree ? new Date(r.date_entree) : null,
+    dateSortie: r.date_sortie ? new Date(r.date_sortie) : null,
+    role: r.role === "interne" ? "interne" : "consultant",
+  }))
+}
+
+/**
+ * Présences d'un mois donné, indexées par clé `consultant_id|YYYY-MM-DD`.
+ * Utilisé par la matrice de saisie (montage + changement de mois).
+ */
+export async function fetchPresencesDuMois(
+  annee: number,
+  mois: number,
+): Promise<Map<string, PresenceStatut>> {
+  const mm = String(mois).padStart(2, "0")
+  const dernierJour = new Date(annee, mois, 0).getDate()
+  const debut = `${annee}-${mm}-01`
+  const fin = `${annee}-${mm}-${String(dernierJour).padStart(2, "0")}`
+
+  const { data, error } = await supabase
+    .from("presences")
+    .select("consultant_id, date, statut")
+    .gte("date", debut)
+    .lte("date", fin)
+  if (error) {
+    throw new Error(
+      `Supabase : échec du fetch des présences de ${annee}-${mm} — ${error.message}`,
+    )
+  }
+
+  const map = new Map<string, PresenceStatut>()
+  for (const p of (data ?? []) as PresenceRaw[]) {
+    map.set(`${p.consultant_id}|${p.date}`, p.statut)
+  }
+  return map
 }

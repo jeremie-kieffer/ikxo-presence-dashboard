@@ -5,7 +5,7 @@ import { FormationView } from "./components/views/FormationView"
 import { MonthView } from "./components/views/MonthView"
 import { QuarterView } from "./components/views/QuarterView"
 import { VueConsultantsPlaceholder } from "./components/views/VueConsultantsPlaceholder"
-import { VueSaisiePresencesPlaceholder } from "./components/views/VueSaisiePresencesPlaceholder"
+import { VueSaisiePresences } from "./components/views/VueSaisiePresences"
 import { VueSessionsFormationPlaceholder } from "./components/views/VueSessionsFormationPlaceholder"
 import { chargerDonnees } from "./lib/data-source"
 import {
@@ -90,7 +90,7 @@ function App() {
       <main className="px-6 py-6">
         {module === "saisie-presences" && (
           <RequireAuth>
-            <VueSaisiePresencesPlaceholder />
+            <VueSaisiePresences data={data} />
           </RequireAuth>
         )}
         {module === "sessions-formation" && (
