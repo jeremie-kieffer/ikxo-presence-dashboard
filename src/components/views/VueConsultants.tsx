@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { DrawerConsultant } from "../DrawerConsultant"
-import { nomFamille } from "../PickerConsultant"
 import { Toast } from "../Toast"
+import { comparerParNomFamille } from "../../lib/tri-noms"
 import {
   fetchTousConsultants,
   type ConsultantComplet,
@@ -75,7 +75,7 @@ export function VueConsultants() {
     return [...filtrees].sort((a, b) => {
       switch (tri.col) {
         case "nom":
-          return nomFamille(a.nom).localeCompare(nomFamille(b.nom), "fr") * facteur
+          return comparerParNomFamille(a.nom, b.nom) * facteur
         case "role":
           return a.role.localeCompare(b.role, "fr") * facteur
         case "dateEntree":

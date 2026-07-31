@@ -1,12 +1,6 @@
 import { useMemo, useState } from "react"
+import { comparerParNomFamille } from "../lib/tri-noms"
 import type { ConsultantAvecId } from "../lib/supabase-fetchers"
-
-// Tri « par nom de famille » = dernier mot du champ nom.
-// "Achille Bruant" -> "Bruant".
-export function nomFamille(nom: string): string {
-  const parts = nom.trim().split(/\s+/)
-  return parts[parts.length - 1] ?? nom
-}
 
 /**
  * Mini-picker déroulant réutilisable (Formateurs / Inscrits). Reçoit la liste
@@ -29,7 +23,7 @@ export function PickerConsultant({
     return consultants
       .filter((c) => !exclure.has(c.id))
       .filter((c) => (rech ? c.nom.toLowerCase().includes(rech) : true))
-      .sort((a, b) => nomFamille(a.nom).localeCompare(nomFamille(b.nom), "fr"))
+      .sort((a, b) => comparerParNomFamille(a.nom, b.nom))
   }, [consultants, exclure, q])
 
   return (

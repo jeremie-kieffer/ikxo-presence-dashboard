@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { PickerConsultant, nomFamille } from "./PickerConsultant"
+import { PickerConsultant } from "./PickerConsultant"
 import { Toast } from "./Toast"
 import { supabase } from "../lib/supabase-client"
+import { comparerParNomFamille } from "../lib/tri-noms"
 import {
   countFeedbacksSession,
   fetchParticipationsSession,
@@ -138,7 +139,7 @@ export function DrawerSession({
         const aP = assignations.get(a.id) === "present" ? 0 : 1
         const bP = assignations.get(b.id) === "present" ? 0 : 1
         if (aP !== bP) return aP - bP
-        return nomFamille(a.nom).localeCompare(nomFamille(b.nom), "fr")
+        return comparerParNomFamille(a.nom, b.nom)
       })
   }, [eligibles, assignations, qParticipants])
 

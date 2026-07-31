@@ -2,6 +2,7 @@
 // (Mensuelle/Trimestrielle/mois) restent dans le main pour distinguer
 // nav primaire et filtres contextuels.
 
+import { prenomAdmin } from "../lib/admin-prenoms"
 import { deconnecter } from "../lib/auth-helpers"
 import { libelleMiseAJour } from "../lib/format"
 import { useSession } from "../lib/use-session"
@@ -40,15 +41,6 @@ const MODULES_A_VENIR: { label: string; icon: IconName }[] = [
   { label: "Vue consultant", icon: "user" },
 ]
 
-// Prénom affiché = 1re partie de l'email avant le point, capitalisée.
-// "jeremie.kieffer@ikxo.fr" -> "Jeremie". (Les accents ne sont pas
-// reconstituables depuis l'email : capitalisation simple, pas de sur-ingénierie.)
-function prenomDepuisEmail(email: string): string {
-  const local = email.split("@")[0] ?? ""
-  const prenom = local.split(".")[0] ?? ""
-  if (prenom === "") return email
-  return prenom.charAt(0).toUpperCase() + prenom.slice(1)
-}
 
 export function Sidebar({
   module,
@@ -138,7 +130,7 @@ export function Sidebar({
         <div className="shrink-0 [border-top:0.5px_solid_#e5e7eb] px-5 py-4">
           <p className="text-[11px] text-gray-500">Connecté en tant que</p>
           <p className="text-sm font-medium text-ikxo-blue">
-            {prenomDepuisEmail(user.email ?? "")}
+            {prenomAdmin(user.email ?? "")}
           </p>
           <button
             type="button"

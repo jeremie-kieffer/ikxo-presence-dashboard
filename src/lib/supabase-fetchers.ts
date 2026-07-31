@@ -21,6 +21,7 @@
  */
 import { supabase } from "./supabase-client"
 import { estActifCeMois } from "./kpi-calculators"
+import { comparerParNomFamille } from "./tri-noms"
 import type {
   CelluleSaisie,
   Consultant,
@@ -615,12 +616,6 @@ export interface ConsultantComplet {
   role: RoleConsultant
 }
 
-// Nom de famille = dernier mot du champ nom ("Zelal Aslan" -> "Aslan").
-function nomDeFamille(nom: string): string {
-  const parts = nom.trim().split(/\s+/)
-  return parts[parts.length - 1] ?? nom
-}
-
 // Tous les consultants (actifs + sortis), triés par nom de famille asc.
 // Retourne aussi l'email (non affiché en UI) pour ne pas perdre la donnée.
 export async function fetchTousConsultants(): Promise<ConsultantComplet[]> {
@@ -634,7 +629,7 @@ export async function fetchTousConsultants(): Promise<ConsultantComplet[]> {
       dateSortie: r.date_sortie ? new Date(r.date_sortie) : null,
       role: (r.role === "interne" ? "interne" : "consultant") as RoleConsultant,
     }))
-    .sort((a, b) => nomDeFamille(a.nom).localeCompare(nomDeFamille(b.nom), "fr"))
+    .sort((a, b) => comparerParNomFamille(a.nom, b.nom))
 }
 
 export interface ConsultantAEnregistrer {
