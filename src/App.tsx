@@ -7,7 +7,7 @@ import { MonthView } from "./components/views/MonthView"
 import { QuarterView } from "./components/views/QuarterView"
 import { VueConsultantsPlaceholder } from "./components/views/VueConsultantsPlaceholder"
 import { VueSaisiePresences } from "./components/views/VueSaisiePresences"
-import { VueSessionsFormationPlaceholder } from "./components/views/VueSessionsFormationPlaceholder"
+import { VueSessionsFormation } from "./components/views/VueSessionsFormation"
 import { chargerDonnees } from "./lib/data-source"
 import {
   clesDuTrimestre,
@@ -106,7 +106,7 @@ function App() {
         )}
         {module === "sessions-formation" && (
           <RequireAuth>
-            <VueSessionsFormationPlaceholder />
+            <VueSessionsFormation />
           </RequireAuth>
         )}
         {module === "consultants" && (

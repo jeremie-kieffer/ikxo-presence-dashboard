@@ -39,7 +39,7 @@ import type {
 // === Types bruts (format long tel que stocké en base) ===
 
 export type PresenceStatut = "present" | "intercontract" | "absence_longue"
-type ParticipationStatut = "formateur" | "present" | "inscrit"
+export type ParticipationStatut = "formateur" | "present" | "inscrit"
 
 export interface PresenceRaw {
   consultant_id: string
@@ -487,4 +487,110 @@ export async function fetchPresencesDuMois(
     map.set(`${p.consultant_id}|${p.date}`, p.statut)
   }
   return map
+}
+
+// === Sessions formation (substep 5.4) ===
+
+export interface SessionAvecStats {
+  id: string
+  date: Date
+  thematique: string
+  lienSupport?: string
+  formateurs: string[] // noms, triés alpha FR
+  nbParticipants: number // attendees = statut 'formateur' + 'present'
+  nbFeedbacks: number
+}
+
+// Liste des sessions enrichie des compteurs, pour la table. On agrège en un
+// seul passage plutôt que N requêtes count par session.
+export async function fetchSessionsAvecStats(): Promise<SessionAvecStats[]> {
+  const [sessionsRows, participations, feedbacks, consultants] =
+    await Promise.all([
+      selectAll<SessionRow>("sessions_formation"),
+      selectAll<ParticipationRaw>("participations_formation"),
+      selectAll<{ session_id: string }>("feedbacks_formation"),
+      fetchConsultantsAvecId(),
+    ])
+
+  const idToNom = new Map(consultants.map((c) => [c.id, c.nom]))
+
+  const parSession = new Map<
+    string,
+    { formateurs: string[]; nbParticipants: number }
+  >()
+  for (const p of participations) {
+    let e = parSession.get(p.session_id)
+    if (!e) {
+      e = { formateurs: [], nbParticipants: 0 }
+      parSession.set(p.session_id, e)
+    }
+    if (p.statut === "formateur") {
+      const nom = idToNom.get(p.consultant_id)
+      if (nom) e.formateurs.push(nom)
+      e.nbParticipants++
+    } else if (p.statut === "present") {
+      e.nbParticipants++
+    }
+    // 'inscrit' (non venu) : pas compté dans nbParticipants.
+  }
+
+  const nbFbParSession = new Map<string, number>()
+  for (const f of feedbacks) {
+    nbFbParSession.set(f.session_id, (nbFbParSession.get(f.session_id) ?? 0) + 1)
+  }
+
+  return sessionsRows
+    .filter((r) => r.date != null)
+    .map((r) => {
+      const agg = parSession.get(r.id) ?? { formateurs: [], nbParticipants: 0 }
+      return {
+        id: r.id,
+        date: new Date(r.date as string),
+        thematique: r.thematique ?? "",
+        lienSupport: r.lien_support ?? undefined,
+        formateurs: agg.formateurs.sort((a, b) => a.localeCompare(b, "fr")),
+        nbParticipants: agg.nbParticipants,
+        nbFeedbacks: nbFbParSession.get(r.id) ?? 0,
+      }
+    })
+}
+
+export interface ParticipationSession {
+  consultantId: string
+  statut: ParticipationStatut
+}
+
+// Participations d'une session (pour pré-remplir le drawer d'édition).
+export async function fetchParticipationsSession(
+  sessionId: string,
+): Promise<ParticipationSession[]> {
+  const { data, error } = await supabase
+    .from("participations_formation")
+    .select("consultant_id, statut")
+    .eq("session_id", sessionId)
+  if (error) {
+    throw new Error(
+      `Supabase : échec du fetch des participations de ${sessionId} — ${error.message}`,
+    )
+  }
+  return (data ?? []).map((r) => ({
+    consultantId: (r as { consultant_id: string }).consultant_id,
+    statut: (r as { statut: ParticipationStatut }).statut,
+  }))
+}
+
+// Nombre de feedbacks associés à une session (garde-fou avant suppression).
+export async function countFeedbacksSession(
+  sessionId: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("feedbacks_formation")
+    .select("*", { count: "exact", head: true })
+    .eq("session_id", sessionId)
+  if (error) {
+    throw new Error(
+      `Supabase : échec du comptage des feedbacks de ${sessionId} — ${error.message}`,
+    )
+  }
+  return count ?? 0
 }
