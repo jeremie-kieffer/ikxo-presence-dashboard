@@ -62,7 +62,7 @@ export function Sidebar({
   const { user, loading } = useSession()
   const libelleMaj = libelleMiseAJour(dateMiseAJour)
   return (
-    <aside className="flex h-full flex-col bg-gray-50 [border-right:0.5px_solid_#e5e7eb]">
+    <aside className="sticky top-0 flex h-screen flex-col bg-gray-50 [border-right:0.5px_solid_#e5e7eb]">
       <div className="px-5 pb-4 pt-6">
         <h1 className="font-heading text-lg font-semibold tracking-tight text-ikxo-blue">
           Dashboard IKXO
@@ -73,7 +73,7 @@ export function Sidebar({
       </div>
       <div className="[border-top:0.5px_solid_#e5e7eb]" />
 
-      <nav className="flex-1 px-2 py-4">
+      <nav className="flex-1 overflow-y-auto px-2 py-4">
         <ul className="space-y-0.5">
           {MODULES_ACTIFS.map((m) => (
             <li key={m.id}>
@@ -124,7 +124,7 @@ export function Sidebar({
       </nav>
 
       {!user && !loading && (
-        <div className="[border-top:0.5px_solid_#e5e7eb] p-2">
+        <div className="shrink-0 [border-top:0.5px_solid_#e5e7eb] p-2">
           <SidebarItem
             icon="login"
             label="Se connecter"
@@ -135,7 +135,7 @@ export function Sidebar({
       )}
 
       {user && (
-        <div className="[border-top:0.5px_solid_#e5e7eb] px-5 py-4">
+        <div className="shrink-0 [border-top:0.5px_solid_#e5e7eb] px-5 py-4">
           <p className="text-[11px] text-gray-500">Connecté en tant que</p>
           <p className="text-sm font-medium text-ikxo-blue">
             {prenomDepuisEmail(user.email ?? "")}

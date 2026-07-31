@@ -19,6 +19,15 @@ const JOURS_LETTRES = ["L", "M", "M", "J", "V"] // lun..ven
 // Cycle au clic : vide → present → intercontract → absence_longue → vide.
 const CYCLE = ["", "present", "intercontract", "absence_longue"] as const
 
+// Légende des statuts affichée dans le bloc de consignes (même mise en forme
+// que les cellules de la matrice, via apparenceCellule).
+const LEGENDE: { statut: string; texte: string }[] = [
+  { statut: "", texte: "Vide" },
+  { statut: "present", texte: "Présent" },
+  { statut: "intercontract", texte: "Intercontrat" },
+  { statut: "absence_longue", texte: "Absence longue" },
+]
+
 type MoisAffiche = { annee: number; mois: number }
 
 function pad2(n: number): string {
@@ -249,14 +258,9 @@ export function VueSaisiePresences({ data }: { data: DashboardData }) {
       )}
 
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">
-            Saisie des présences
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Clic sur une cellule : vide → P → IC → M → vide.
-          </p>
-        </div>
+        <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">
+          Saisie des présences
+        </h2>
         <select
           value={`${moisAffiche.annee}-${pad2(moisAffiche.mois)}`}
           onChange={(e) => {
@@ -301,6 +305,52 @@ export function VueSaisiePresences({ data }: { data: DashboardData }) {
         >
           {saveEnCours ? "Enregistrement…" : "Enregistrer"}
         </button>
+      </div>
+
+      <div className="mb-4 flex gap-2.5 rounded-md border border-ikxo-blue/15 bg-ikxo-blue/5 px-4 py-3">
+        <svg
+          className="mt-0.5 shrink-0 text-ikxo-blue"
+          width={18}
+          height={18}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4M12 8h.01" />
+        </svg>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-ikxo-blue">Comment saisir</p>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Clique pour saisir, reclique pour modifier.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5">
+            {LEGENDE.map((l) => {
+              const { label, classes } = apparenceCellule(l.statut)
+              const bordure = l.statut === "" ? "border border-slate-300" : ""
+              return (
+                <span
+                  key={l.texte}
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-600"
+                >
+                  <span
+                    className={`inline-flex h-5 w-6 items-center justify-center rounded text-[11px] font-semibold ${classes} ${bordure}`}
+                  >
+                    {label}
+                  </span>
+                  {l.texte}
+                </span>
+              )
+            })}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            N'oublie pas de cliquer « Enregistrer » à la fin.
+          </p>
+        </div>
       </div>
 
       {chargement ? (
