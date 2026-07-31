@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Toast } from "../Toast"
 import { estActifCeMois } from "../../lib/kpi-calculators"
 import { supabase } from "../../lib/supabase-client"
+import { comparerParNomFamille } from "../../lib/tri-noms"
 import {
   fetchConsultantsAvecId,
   fetchPresencesDuMois,
@@ -168,7 +169,7 @@ export function VueSaisiePresences({ data }: { data: DashboardData }) {
     () =>
       consultants
         .filter((c) => estActifCeMois(c, moisAffiche.annee, moisAffiche.mois))
-        .sort((a, b) => a.nom.localeCompare(b.nom, "fr")),
+        .sort((a, b) => comparerParNomFamille(a.nom, b.nom)),
     [consultants, moisAffiche],
   )
 
