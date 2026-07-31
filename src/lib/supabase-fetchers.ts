@@ -594,3 +594,79 @@ export async function countFeedbacksSession(
   }
   return count ?? 0
 }
+
+// === Référentiel consultants (substep 5.5) ===
+
+interface ConsultantRowComplet {
+  id: string
+  nom: string
+  email: string | null
+  date_entree: string | null
+  date_sortie: string | null
+  role: string
+}
+
+export interface ConsultantComplet {
+  id: string
+  nom: string
+  email: string | null
+  dateEntree: Date | null
+  dateSortie: Date | null
+  role: RoleConsultant
+}
+
+// Nom de famille = dernier mot du champ nom ("Zelal Aslan" -> "Aslan").
+function nomDeFamille(nom: string): string {
+  const parts = nom.trim().split(/\s+/)
+  return parts[parts.length - 1] ?? nom
+}
+
+// Tous les consultants (actifs + sortis), triés par nom de famille asc.
+// Retourne aussi l'email (non affiché en UI) pour ne pas perdre la donnée.
+export async function fetchTousConsultants(): Promise<ConsultantComplet[]> {
+  const rows = await selectAll<ConsultantRowComplet>("consultants")
+  return rows
+    .map((r) => ({
+      id: r.id,
+      nom: r.nom,
+      email: r.email,
+      dateEntree: r.date_entree ? new Date(r.date_entree) : null,
+      dateSortie: r.date_sortie ? new Date(r.date_sortie) : null,
+      role: (r.role === "interne" ? "interne" : "consultant") as RoleConsultant,
+    }))
+    .sort((a, b) => nomDeFamille(a.nom).localeCompare(nomDeFamille(b.nom), "fr"))
+}
+
+export interface ConsultantAEnregistrer {
+  id?: string // absent = création (UUID généré par la DB)
+  nom: string
+  dateEntree: string // ISO 'YYYY-MM-DD'
+  dateSortie: string | null
+  role: RoleConsultant
+}
+
+/**
+ * Insert (création, id généré par la DB) ou update ciblé (édition).
+ * L'update ne touche QUE les 4 champs éditables — l'email (Phase 2) est
+ * volontairement préservé en base.
+ */
+export async function upsertConsultant(
+  c: ConsultantAEnregistrer,
+): Promise<void> {
+  const payload = {
+    nom: c.nom,
+    date_entree: c.dateEntree,
+    date_sortie: c.dateSortie,
+    role: c.role,
+  }
+  if (c.id) {
+    const { error } = await supabase
+      .from("consultants")
+      .update(payload)
+      .eq("id", c.id)
+    if (error) throw new Error(error.message)
+  } else {
+    const { error } = await supabase.from("consultants").insert(payload)
+    if (error) throw new Error(error.message)
+  }
+}

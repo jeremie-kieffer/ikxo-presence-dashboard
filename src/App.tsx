@@ -5,7 +5,7 @@ import { Sidebar, type Module } from "./components/Sidebar"
 import { FormationView } from "./components/views/FormationView"
 import { MonthView } from "./components/views/MonthView"
 import { QuarterView } from "./components/views/QuarterView"
-import { VueConsultantsPlaceholder } from "./components/views/VueConsultantsPlaceholder"
+import { VueConsultants } from "./components/views/VueConsultants"
 import { VueSaisiePresences } from "./components/views/VueSaisiePresences"
 import { VueSessionsFormation } from "./components/views/VueSessionsFormation"
 import { chargerDonnees } from "./lib/data-source"
@@ -111,7 +111,7 @@ function App() {
         )}
         {module === "consultants" && (
           <RequireAuth>
-            <VueConsultantsPlaceholder />
+            <VueConsultants />
           </RequireAuth>
         )}
 
