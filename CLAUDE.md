@@ -32,6 +32,16 @@ Le front lit deux variables (préfixe `VITE_` obligatoire pour être exposées a
 
 En **dev** : fichier `.env` à la racine (gitignoré). En **prod** : variables d'environnement Cloudflare Pages. La clé `service_role` (utilisée par le script de migration Python) ne doit **jamais** être exposée au front.
 
+## Sécurité et accès
+
+Modèle d'accès depuis la substep 5.6 (anticipée) :
+
+- **Lecture : publique.** Le dashboard (vues Présence / Formation) est consultable sans authentification. Acceptable pour ce use case : données non critiques, URL `pages.dev` non-indexée. La clé `anon` autorise la lecture via RLS.
+- **Écriture : protégée.** Toute écriture en base exige une session **Supabase Auth** (magic link, domaine `@ikxo.fr`), appliquée par les policies **RLS** (`authenticated` peut écrire, `anon` lecture seule). Les vues d'administration sont gardées côté front par `RequireAuth`.
+- **Anti-indexation :** `public/robots.txt` (`Disallow: /`) + `<meta name="robots" content="noindex, nofollow">` dans `index.html`.
+
+> **Historique** : jusqu'à la 5.6, la prod était protégée par un middleware Cloudflare Pages (`functions/_middleware.ts`) exigeant un **mot de passe partagé** (cookie HMAC). Il a été **retiré** car il strippait le fragment `#access_token=…` du magic link Supabase à la redirection, cassant l'auth end-to-end. Les variables Cloudflare `DASHBOARD_PASSWORD` / `COOKIE_SECRET` sont donc devenues inutiles (à nettoyer côté dashboard Cloudflare).
+
 ## Tests et fixtures
 
 Le fichier `tests/fixtures/suivi_presence_consultants.xlsx` est une **fixture historique** : plus servie en prod (déplacée hors de `public/` à la substep 4.6), elle alimente les tests Vitest qui valident les calculateurs KPI et feedback contre des valeurs de référence connues. `src/lib/excel-parser.ts` (+ la dépendance `xlsx`) sont conservés **uniquement** pour lire cette fixture dans : `excel-parser.test.ts`, `kpi-calculators.test.ts`, `kpi-feedback.test.ts`, `parser-feedback.test.ts`.
