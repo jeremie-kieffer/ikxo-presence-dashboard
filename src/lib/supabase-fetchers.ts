@@ -22,6 +22,7 @@
 import { supabase } from "./supabase-client"
 import { estActifCeMois } from "./kpi-calculators"
 import { comparerParNomFamille } from "./tri-noms"
+import type { FeedbackParsed } from "./parser-csv-feedbacks"
 import type {
   CelluleSaisie,
   Consultant,
@@ -578,6 +579,42 @@ export async function fetchParticipationsSession(
     consultantId: (r as { consultant_id: string }).consultant_id,
     statut: (r as { statut: ParticipationStatut }).statut,
   }))
+}
+
+export interface FeedbackSession {
+  id: string
+  note_globale: number
+}
+
+// Feedbacks d'une session (id + note) : sert au count, à la note moyenne et à
+// la détection des doublons lors de l'import CSV.
+export async function fetchFeedbacksSession(
+  sessionId: string,
+): Promise<FeedbackSession[]> {
+  const { data, error } = await supabase
+    .from("feedbacks_formation")
+    .select("id, note_globale")
+    .eq("session_id", sessionId)
+  if (error) {
+    throw new Error(
+      `Supabase : échec du fetch des feedbacks de ${sessionId} — ${error.message}`,
+    )
+  }
+  return (data ?? []).map((r) => ({
+    id: (r as { id: string }).id,
+    note_globale: (r as { note_globale: number }).note_globale,
+  }))
+}
+
+// Import batch des feedbacks (upsert on conflict id → idempotent).
+export async function importerFeedbacks(
+  feedbacks: FeedbackParsed[],
+): Promise<void> {
+  if (feedbacks.length === 0) return
+  const { error } = await supabase
+    .from("feedbacks_formation")
+    .upsert(feedbacks, { onConflict: "id" })
+  if (error) throw new Error(error.message)
 }
 
 // Nombre de feedbacks associés à une session (garde-fou avant suppression).

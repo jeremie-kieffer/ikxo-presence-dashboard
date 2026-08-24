@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react"
+import { ModalImportFeedbacks } from "./ModalImportFeedbacks"
 import { PickerConsultant } from "./PickerConsultant"
 import { Toast } from "./Toast"
 import { supabase } from "../lib/supabase-client"
 import { comparerParNomFamille } from "../lib/tri-noms"
 import {
   countFeedbacksSession,
+  fetchFeedbacksSession,
   fetchParticipationsSession,
   type ConsultantAvecId,
+  type FeedbackSession,
   type ParticipationStatut,
   type SessionAvecStats,
 } from "../lib/supabase-fetchers"
@@ -86,6 +89,38 @@ export function DrawerSession({
     type: "success" | "error"
     message: string
   } | null>(null)
+  const [feedbacks, setFeedbacks] = useState<FeedbackSession[]>([])
+  const [modalImport, setModalImport] = useState(false)
+
+  // Feedbacks de la session (édition uniquement) : count + note moyenne.
+  useEffect(() => {
+    if (!session) return
+    let actif = true
+    fetchFeedbacksSession(session.id)
+      .then((fb) => {
+        if (actif) setFeedbacks(fb)
+      })
+      .catch((e: Error) =>
+        setToast({ type: "error", message: `Feedbacks : ${e.message}` }),
+      )
+    return () => {
+      actif = false
+    }
+  }, [session])
+
+  async function rechargerFeedbacks() {
+    if (!session) return
+    try {
+      setFeedbacks(await fetchFeedbacksSession(session.id))
+    } catch {
+      /* le toast d'erreur est géré ailleurs */
+    }
+  }
+
+  const noteMoyenne =
+    feedbacks.length > 0
+      ? feedbacks.reduce((s, f) => s + f.note_globale, 0) / feedbacks.length
+      : null
 
   // Animation d'entrée (slide depuis la droite).
   useEffect(() => {
@@ -446,6 +481,27 @@ export function DrawerSession({
             exclure={idsInscrits}
             onPick={(id) => affecter(id, "inscrit")}
           />
+
+          {/* Feedbacks (édition uniquement) */}
+          {enEdition && (
+            <div className="rounded-md border border-slate-200 bg-slate-50/60 p-3">
+              <p className="text-sm font-medium text-slate-700">
+                Feedbacks ({feedbacks.length})
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {noteMoyenne !== null
+                  ? `Note moyenne : ${noteMoyenne.toFixed(1).replace(".", ",")}/5`
+                  : "Aucun feedback"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setModalImport(true)}
+                className="mt-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-ikxo-blue hover:text-ikxo-blue"
+              >
+                Importer un CSV Google Forms
+              </button>
+            </div>
+          )}
         </div>
 
         <footer className="flex items-center justify-between gap-3 border-t border-slate-200 px-5 py-3">
@@ -481,6 +537,22 @@ export function DrawerSession({
           </div>
         </footer>
       </div>
+
+      {modalImport && session && (
+        <ModalImportFeedbacks
+          sessionId={session.id}
+          idsExistants={new Set(feedbacks.map((f) => f.id))}
+          onClose={() => setModalImport(false)}
+          onImported={(nb) => {
+            setModalImport(false)
+            setToast({
+              type: "success",
+              message: `✅ ${nb} feedback${nb > 1 ? "s" : ""} importé${nb > 1 ? "s" : ""}`,
+            })
+            void rechargerFeedbacks()
+          }}
+        />
+      )}
     </div>
   )
 }
