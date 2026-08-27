@@ -110,7 +110,7 @@ export function VueSessionsFormation() {
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-[22px] font-semibold leading-tight text-ikxo-blue">
-            Sessions formation
+            Saisie des formations
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             {sessions.length} session{sessions.length > 1 ? "s" : ""} au catalogue

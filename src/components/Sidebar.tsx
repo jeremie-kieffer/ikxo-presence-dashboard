@@ -32,7 +32,7 @@ const MODULES_ACTIFS: { id: Module; label: string; icon: IconName }[] = [
 // Vues réservées aux admins connectés (placeholders jusqu'aux substeps 5.3-5.5).
 const MODULES_ADMIN: { id: Module; label: string; icon: IconName }[] = [
   { id: "saisie-presences", label: "Saisie présences", icon: "edit" },
-  { id: "sessions-formation", label: "Sessions formation", icon: "school" },
+  { id: "sessions-formation", label: "Saisie formation", icon: "school" },
   { id: "consultants", label: "Consultants", icon: "users" },
 ]
 
