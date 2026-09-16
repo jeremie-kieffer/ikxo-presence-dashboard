@@ -426,6 +426,10 @@ export function filtrerSessions(
 export function computeFormationKPIs(
   sessions: SessionFormation[],
   participations: ParticipationsFormation,
+  // Noms des consultants `interne` : exclus UNIQUEMENT du Top 5 participants
+  // (intention métier = montée en compétence des consultants). Ils restent
+  // comptés partout ailleurs (participants uniques, parConsultant, etc.).
+  nomsInternes: ReadonlySet<string> = new Set(),
 ): FormationKPI {
   // Restreint les codes "F"/"P" aux sessions de la fenêtre demandée.
   const idsSessionsRetenues = new Set(sessions.map((s) => s.idSession))
@@ -462,7 +466,7 @@ export function computeFormationKPIs(
     .slice(0, 5)
 
   const topParticipants = parConsultant
-    .filter((c) => c.participations > 0)
+    .filter((c) => c.participations > 0 && !nomsInternes.has(c.nom))
     .map((c) => ({ nom: c.nom, nb: c.participations }))
     .sort(comparerNbDesc)
     .slice(0, 5)

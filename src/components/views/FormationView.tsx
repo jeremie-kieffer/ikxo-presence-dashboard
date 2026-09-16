@@ -45,9 +45,23 @@ const CLASSE_TEXTE_NOTE: Record<CouleurValeur, string> = {
 }
 
 export function FormationView({ data }: { data: DashboardData }) {
+  const nomsInternes = useMemo(
+    () =>
+      new Set(
+        data.consultants
+          .filter((c) => c.role === "interne")
+          .map((c) => c.nom),
+      ),
+    [data.consultants],
+  )
   const kpiFormation = useMemo(
-    () => computeFormationKPIs(data.formations, data.participationsFormations),
-    [data.formations, data.participationsFormations],
+    () =>
+      computeFormationKPIs(
+        data.formations,
+        data.participationsFormations,
+        nomsInternes,
+      ),
+    [data.formations, data.participationsFormations, nomsInternes],
   )
   const kpiFeedback = useMemo(
     () =>
@@ -676,13 +690,22 @@ function BlocVerbatims({
 // === Vue par consultant (inchangée) ===
 
 function SectionConsultant({ data }: { data: DashboardData }) {
-  const nomsTries = useMemo(
-    () =>
-      [...data.participationsFormations.keys()].sort((a, b) =>
-        a.localeCompare(b, "fr"),
-      ),
-    [data.participationsFormations],
-  )
+  // Sélecteur : on exclut les ex-consultants (dateSortie passée), cohérent avec
+  // le filtre « Actifs » de la liste Consultants. Actif = pas de sortie, ou
+  // sortie dans le futur. Un nom absent du référentiel est conservé (pas d'info).
+  const nomsTries = useMemo(() => {
+    const parNom = new Map(data.consultants.map((c) => [c.nom, c]))
+    const aujourdhui = new Date()
+    aujourdhui.setHours(0, 0, 0, 0)
+    const estActif = (nom: string): boolean => {
+      const c = parNom.get(nom)
+      if (!c || !c.dateSortie) return true
+      return c.dateSortie.getTime() > aujourdhui.getTime()
+    }
+    return [...data.participationsFormations.keys()]
+      .filter(estActif)
+      .sort((a, b) => a.localeCompare(b, "fr"))
+  }, [data.participationsFormations, data.consultants])
   const [nomSel, setNomSel] = useState<string>(nomsTries[0] ?? "")
 
   const sessionsDuConsultant = useMemo(() => {

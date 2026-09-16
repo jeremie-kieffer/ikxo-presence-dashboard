@@ -494,6 +494,17 @@ describe("formations — computeFormationKPIs (fenêtre globale)", () => {
     expect(kpi.topParticipants[0]).toEqual({ nom: "Laureline Berthou", nb: 11 })
   })
 
+  it("Top 5 participants : les noms marqués internes sont exclus (et le slot est repourvu)", () => {
+    const tete = kpi.topParticipants[0].nom
+    const filtre = computeFormationKPIs(
+      data.formations,
+      data.participationsFormations,
+      new Set([tete]),
+    )
+    expect(filtre.topParticipants.some((p) => p.nom === tete)).toBe(false)
+    expect(filtre.topParticipants.length).toBe(kpi.topParticipants.length)
+  })
+
   it("topFormateurs et topParticipants sont triés desc et limités à 5", () => {
     expect(kpi.topFormateurs.length).toBeLessThanOrEqual(5)
     expect(kpi.topParticipants.length).toBeLessThanOrEqual(5)
