@@ -499,7 +499,7 @@ export interface SessionAvecStats {
   thematique: string
   lienSupport?: string
   formateurs: string[] // noms, triés alpha FR
-  nbParticipants: number // attendees = statut 'formateur' + 'present'
+  nbParticipants: number // = statut 'present' uniquement (hors formateurs/inscrits)
   nbFeedbacks: number
 }
 
@@ -529,11 +529,11 @@ export async function fetchSessionsAvecStats(): Promise<SessionAvecStats[]> {
     if (p.statut === "formateur") {
       const nom = idToNom.get(p.consultant_id)
       if (nom) e.formateurs.push(nom)
-      e.nbParticipants++
     } else if (p.statut === "present") {
       e.nbParticipants++
     }
-    // 'inscrit' (non venu) : pas compté dans nbParticipants.
+    // 'inscrit' (non venu) et 'formateur' (animateur) : pas comptés dans
+    // nbParticipants. « Participant » = présent uniquement (évo 3).
   }
 
   const nbFbParSession = new Map<string, number>()

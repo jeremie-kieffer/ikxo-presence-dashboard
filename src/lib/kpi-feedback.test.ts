@@ -47,8 +47,8 @@ describe("computeFeedbackKPIs : globaux", () => {
     expect(Object.values(d).reduce((a, b) => a + b, 0)).toBe(63)
   })
 
-  it("tauxRetourMoyen ≈ 0.78 (moyenne pondérée par session)", () => {
-    expect(kpi.tauxRetourMoyen).toBeCloseTo(0.7812, 2)
+  it("tauxRetourMoyen ≈ 0.91 (moyenne pondérée par session, présents seuls)", () => {
+    expect(kpi.tauxRetourMoyen).toBeCloseTo(0.9056, 2)
   })
 
   it("vide en l'absence de feedbacks", () => {
@@ -61,29 +61,29 @@ describe("computeFeedbackKPIs : globaux", () => {
 })
 
 describe("computeFeedbackParSession", () => {
-  it("F-2026-009 : 5 retours, 9 participants, note moyenne 3.6", () => {
+  it("F-2026-009 : 5 retours, 8 participants (présents seuls), note moyenne 3.6", () => {
     const s = computeFeedbackParSession(
       "F-2026-009",
       data.feedbacksFormation,
       data.participationsFormations,
     )
     expect(s.nbRetours).toBe(5)
-    expect(s.nbParticipants).toBe(9)
-    expect(s.tauxRetour).toBeCloseTo(5 / 9, 3)
+    expect(s.nbParticipants).toBe(8)
+    expect(s.tauxRetour).toBeCloseTo(5 / 8, 3)
     expect(s.noteMoyenne).toBeCloseTo(3.6, 2)
   })
 
-  it("F-2026-006 : 7 retours, 5 participants, note moyenne 4.86", () => {
+  it("F-2026-006 : 7 retours, 4 participants (présents seuls), note moyenne 4.86", () => {
     const s = computeFeedbackParSession(
       "F-2026-006",
       data.feedbacksFormation,
       data.participationsFormations,
     )
     expect(s.nbRetours).toBe(7)
-    expect(s.nbParticipants).toBe(5)
+    expect(s.nbParticipants).toBe(4)
     expect(s.noteMoyenne).toBeCloseTo(4.857, 2)
-    // Taux peut dépasser 100% si la matrice sous-estime les participants
-    // réels — c'est un signal côté donnée, pas un bug.
+    // Taux > 100% : plus de retours que de présents recensés dans la matrice
+    // (signal côté donnée, pas un bug). 7 retours / 4 présents = 175%.
     expect(s.tauxRetour).toBeGreaterThan(1)
   })
 
@@ -113,9 +113,9 @@ describe("computeFeedbackParSession", () => {
 })
 
 describe("nbParticipantsParSession", () => {
-  it("F-2026-009 a 9 participants (F+P dans la matrice)", () => {
+  it("F-2026-009 a 8 participants (présents 'P' uniquement, hors formateur)", () => {
     const m = nbParticipantsParSession(data.participationsFormations)
-    expect(m.get("F-2026-009")).toBe(9)
+    expect(m.get("F-2026-009")).toBe(8)
   })
 })
 

@@ -298,11 +298,11 @@ Les valeurs de référence des KPI mensuels de présence (taux d'atteinte OKR, n
 | Nb feedbacks total | 63 |
 | Nb sessions avec feedback | 9 (F-2026-003 → F-2026-011) |
 | Note moyenne globale | ≈ 4,52 / 5 |
-| Taux de retour moyen | ≈ 78 % |
+| Taux de retour moyen | ≈ 91 % (présents seuls, hors formateurs — évo 3) |
 | Distribution application | « Oui immédiatement » 35, « Oui mais besoin pratique » 16, « Pas sûr » 8, « Non » 4 |
 | Théo Esposito (formateur) | 3 sessions avec feedback, note ≈ 4,43 |
-| F-2026-009 (5 retours / 9 participants) | note 3,60 |
-| F-2026-006 (7 retours / 5 participants, taux > 100 %) | note 4,86 |
+| F-2026-009 (5 retours / 8 présents) | note 3,60 |
+| F-2026-006 (7 retours / 4 présents, taux 175 %) | note 4,86 |
 
 **Cas particuliers à valider** :
 - Zelal Aslan : marquée `M` en fév-mars (congé mat), `IC` en avril (11 IC). Doit être exclue du calcul fév-mars, comptée comme atteinte en avril.

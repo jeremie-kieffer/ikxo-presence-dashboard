@@ -501,12 +501,17 @@ function comparerNbDesc(
 
 // Nb de participants (F + P) par session, calculé en parcourant la matrice
 // une seule fois. Utilisé à la fois par les KPI globaux et par session.
+// « Participant » = statut 'present' uniquement (évo 3) : les formateurs ('F')
+// ne répondent pas au Google Forms de leur propre session, les inclure au
+// dénominateur sous-évaluerait le taux de retour.
 export function nbParticipantsParSession(
   participations: ParticipationsFormation,
 ): Map<string, number> {
   const m = new Map<string, number>()
   for (const sessions of participations.values()) {
-    for (const id of sessions.keys()) m.set(id, (m.get(id) ?? 0) + 1)
+    for (const [id, role] of sessions) {
+      if (role === "P") m.set(id, (m.get(id) ?? 0) + 1)
+    }
   }
   return m
 }
